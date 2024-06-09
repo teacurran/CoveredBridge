@@ -4,13 +4,26 @@ services:
   main-db:
     image: postgres:latest
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pgpass
       POSTGRES_DB: maindb
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+  # Jaeger
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16685:16685"
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+      - "4317:4317"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      LOG_LEVEL: debug
 
   covered-bridge:
     build:
@@ -18,10 +31,20 @@ services:
       dockerfile: src/main/docker/dev-jvm.dockerfile
     volumes:
       - ./server:/app
+    environment:
+      QUARKUS_DATASOURCE_REACTIVE_URL: vertx-reactive:postgresql://postgresql:5432/maindb
+      QUARKUS_DATASOURCE_USERNAME: pguser
+      QUARKUS_DATASOURCE_PASSWORD: pgpass
+      QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
+      QUARKUS_HTTP_HOST: 0.0.0.0
+      QUARKUS_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4317
+      RABBITMQ_HOST: rabbitmq
+
     ports:
       - "8080:8080"
     depends_on:
       - main-db
+      - jaeger
 
   example-php:
     build:
