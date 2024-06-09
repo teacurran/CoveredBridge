@@ -16,6 +16,8 @@ services:
     build:
       context: ./server
       dockerfile: src/main/docker/dev-jvm.dockerfile
+    volumes:
+      - ./server:/app
     ports:
       - "8080:8080"
     depends_on:
@@ -28,7 +30,7 @@ services:
     ports:
       - "8001:80"
     depends_on:
-      - server
+      - covered-bridge
 
 volumes:
   db_data:
