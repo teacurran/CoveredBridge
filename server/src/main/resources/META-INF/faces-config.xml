@@ -6,7 +6,7 @@
   version="4.0"
 >
 
-  <name>showcase</name>
+  <name>CoveredBridge</name>
 
   <ordering>
     <after>
@@ -22,11 +22,6 @@
       <system-event-listener-class>org.primefaces.extensions.application.PrimeFacesScriptProcessor</system-event-listener-class>
       <system-event-class>jakarta.faces.event.PostAddToViewEvent</system-event-class>
       <source-class>jakarta.faces.component.UIViewRoot</source-class>
-    </system-event-listener>
-    <system-event-listener>
-      <system-event-listener-class>app.coveredbridge.ui.SystemEventListener</system-event-listener-class>
-      <system-event-class>jakarta.faces.event.PostConstructApplicationEvent</system-event-class>
-      <source-class>jakarta.faces.application.Application</source-class>
     </system-event-listener>
     <locale-config>
       <default-locale>en</default-locale>
