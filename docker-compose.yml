@@ -3,6 +3,7 @@ version: '3.8'
 services:
   main-db:
     image: postgres:latest
+    command: ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
     environment:
       POSTGRES_USER: pguser
       POSTGRES_PASSWORD: pgpass
@@ -10,7 +11,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "7432:5432"
 
   # Jaeger
   jaeger:
@@ -32,7 +33,7 @@ services:
     volumes:
       - ./server:/app
     environment:
-      QUARKUS_DATASOURCE_REACTIVE_URL: vertx-reactive:postgresql://postgresql:5432/maindb
+      QUARKUS_DATASOURCE_REACTIVE_URL: vertx-reactive:postgresql://main-db:5432/maindb
       QUARKUS_DATASOURCE_USERNAME: pguser
       QUARKUS_DATASOURCE_PASSWORD: pgpass
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update
