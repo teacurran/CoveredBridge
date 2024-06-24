@@ -1,0 +1,51 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:of="http://omnifaces.org/functions"
+                template="templates/main.xhtml">
+
+  <ui:define name="content">
+    <div id="page-login">
+      <h:form id="loginForm">
+        <div id="logingrid" class="logingrid">
+          <p:panel header="#{I18n['ui.login.header.title']}">
+            <p:messages autoUpdate="true" />
+            <table class="grid">
+              <tbody>
+              <tr>
+                <td class="label"><h:outputLabel for="username"
+                                                 value="#{I18n['ui.login.username']}" /></td>
+                <td class="value"><p:inputText id="username"
+                                               required="true" label="#{I18n['ui.login.username']}"
+                                               value="#{authentication.username}" maxlength="70" requiredMessage="#{I18n['ui.login.username.empty.message']}" />
+                </td>
+
+                <td></td>
+              </tr>
+              <tr>
+                <td class="label"><h:outputLabel for="password"
+                                                 value="#{I18n['ui.login.password']}" /></td>
+                <td class="value"><p:password id="password" required="true"
+                                              label="#{I18n['ui.login.password']}" value="#{authentication.password}"
+                                              maxlength="25" requiredMessage="#{I18n['ui.login.password.empty.message']}" /></td>
+
+              </tr>
+
+              <tr>
+                <td colspan="2" class="label"><p:commandButton
+                  action="#{authentication.login}" value="#{I18n['ui.login.label.login']}"
+                  ajax="true" /></td>
+              </tr>
+              </tbody>
+            </table>
+          </p:panel>
+
+        </div>
+
+      </h:form>
+
+    </div>
+  </ui:define>
+
+</ui:composition>

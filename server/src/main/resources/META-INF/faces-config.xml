@@ -34,6 +34,10 @@
       <base-name>build</base-name>
       <var>build</var>
     </resource-bundle>
+    <resource-bundle>
+      <base-name>locales.I18n</base-name>
+      <var>I18n</var>
+    </resource-bundle>
   </application>
 
   <lifecycle>
