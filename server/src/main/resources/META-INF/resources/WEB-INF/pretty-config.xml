@@ -5,4 +5,9 @@
     <view-id value="/login.xhtml" />
   </url-mapping>
 
+  <url-mapping id="manager_home">
+    <pattern value="/manager"/>
+    <view-id value="/manager/index.xhtml"/>
+  </url-mapping>
+
 </pretty-config>

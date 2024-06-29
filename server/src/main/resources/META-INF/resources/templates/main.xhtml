@@ -12,9 +12,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <link href="#{resource['showcase:images/favicon-32x32.png']}" rel="icon" type="image/png" sizes="32x32"/>
-  <link href="#{resource['showcase:images/favicon-16x16.png']}" rel="icon" type="image/png" sizes="16x16"/>
-  <title>QuarkusFaces Showcase</title>
+  <title>#{I18n['ui.application.name']}</title>
 
   <ui:insert name="head"/>
 
@@ -23,13 +21,6 @@
 <h:body>
   <f:view locale="#{app.locale.locale}">
     <div class="layout-wrapper #{app.inputStyleClass}">
-      <!--
-      <ui:include src="./topbar.xhtml"></ui:include>
-      <ui:include src="./menu.xhtml"></ui:include>
-      <ui:include src="./config.xhtml"></ui:include>
-      -->
-      <div class="layout-mask"></div>
-
       <div class="layout-content">
         <ui:insert name="content">
           <div class="content-section introduction">
