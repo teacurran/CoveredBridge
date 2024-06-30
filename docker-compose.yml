@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: pguser
       POSTGRES_PASSWORD: pgpass
-      POSTGRES_DB: maindb
+      POSTGRES_DB: covered_bridge
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
@@ -33,7 +33,7 @@ services:
     volumes:
       - ./server:/app
     environment:
-      QUARKUS_DATASOURCE_REACTIVE_URL: vertx-reactive:postgresql://main-db:5432/maindb
+      QUARKUS_DATASOURCE_REACTIVE_URL: vertx-reactive:postgresql://main-db:5432/covered_bridge
       QUARKUS_DATASOURCE_USERNAME: pguser
       QUARKUS_DATASOURCE_PASSWORD: pgpass
       QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION: update

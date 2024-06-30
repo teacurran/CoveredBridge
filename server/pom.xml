@@ -26,14 +26,6 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-
-      <dependency>
-        <groupId>org.apache.shiro</groupId>
-        <artifactId>shiro-bom</artifactId>
-        <version>2.0.1</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>
@@ -101,16 +93,12 @@
     </dependency>
     <dependency>
       <groupId>org.ocpsoft.rewrite</groupId>
-      <artifactId>rewrite-config-prettyfaces</artifactId>
-      <version>10.0.2.Final</version>
+      <artifactId>rewrite-servlet</artifactId>
+      <version>10.0.1.Final</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-undertow</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -121,28 +109,6 @@
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
       <scope>test</scope>
-    </dependency>
-
-    <!-- Shiro -->
-    <dependency>
-      <groupId>org.apache.shiro</groupId>
-      <artifactId>shiro-jakarta-ee</artifactId>
-      <classifier>jakarta</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.shiro</groupId>
-      <artifactId>shiro-cdi</artifactId>
-      <classifier>jakarta</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.shiro</groupId>
-      <artifactId>shiro-core</artifactId>
-      <classifier>jakarta</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.shiro</groupId>
-      <artifactId>shiro-web</artifactId>
-      <classifier>jakarta</classifier>
     </dependency>
   </dependencies>
   <build>

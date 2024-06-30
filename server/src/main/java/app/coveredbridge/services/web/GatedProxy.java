@@ -7,6 +7,11 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import jakarta.inject.Inject;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -15,11 +20,11 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 @Path("/")
 public class GatedProxy {
@@ -28,12 +33,38 @@ public class GatedProxy {
   @Inject
   Vertx vertx;
 
+  @Inject
+  ServletContext servletContext;
+
+  @Inject
+  HttpServletRequest request;
+
+  @Inject
+  HttpServletResponse response;
+
   @GET
-  @Path("{path:.*}")
+  @Path("/{path:.*}")
   public Uni<Response> proxy(@Context UriInfo uriInfo, @PathParam("path") String path) {
     String hostname = uriInfo.getBaseUri().getHost();
 
-    LOGGER.info("UriInfo: " + uriInfo.getRequestUri());
+    LOGGER.info("Proxying request for host:%s path:%s".formatted(hostname, path));
+    if (path.startsWith("app/")) {
+      try {
+        RequestDispatcher dispatcher = servletContext.getRequestDispatcher("/" + path);
+        dispatcher.forward(request, response);
+        if (dispatcher != null) {
+          dispatcher.forward(request, response);
+        } else {
+          // Handle the case where the Servlet is not found
+          response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+        return Uni.createFrom().item(Response.ok().build());
+      } catch (ServletException e) {
+        throw new RuntimeException(e);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
 
     return Panache.withTransaction(() -> Host.findByValidatedName(hostname)
       .onItem().ifNotNull().transformToUni(host -> {
