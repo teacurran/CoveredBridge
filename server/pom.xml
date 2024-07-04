@@ -3,9 +3,18 @@
          xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.terrencecurran</groupId>
-  <artifactId>covered-bridge</artifactId>
+
+  <groupId>com.terrencecurran.covered-bridge</groupId>
+  <artifactId>covered-bridge-parent</artifactId>
   <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>covered-bridge</module>
+    <module>covered-bridge-admin</module>
+    <module>covered-bridge-core</module>
+  </modules>
+
   <properties>
     <compiler-plugin.version>3.12.1</compiler-plugin.version>
     <maven.compiler.release>21</maven.compiler.release>
@@ -17,6 +26,7 @@
     <skipITs>true</skipITs>
     <surefire-plugin.version>3.2.5</surefire-plugin.version>
   </properties>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -28,6 +38,7 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -85,16 +96,6 @@
       <groupId>io.quarkiverse.primefaces</groupId>
       <artifactId>quarkus-primefaces-extensions</artifactId>
       <version>3.14.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ocpsoft.rewrite</groupId>
-      <artifactId>rewrite-servlet</artifactId>
-      <version>10.0.2.Final</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ocpsoft.rewrite</groupId>
-      <artifactId>rewrite-servlet</artifactId>
-      <version>10.0.1.Final</version>
     </dependency>
     <dependency>
       <groupId>io.smallrye.reactive</groupId>

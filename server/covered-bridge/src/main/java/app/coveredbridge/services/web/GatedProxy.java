@@ -3,19 +3,11 @@ package app.coveredbridge.services.web;
 import app.coveredbridge.data.models.Host;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.core.http.HttpServerRequest;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.core.http.HttpServerResponse;
-import io.vertx.mutiny.ext.web.RoutingContext;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -24,7 +16,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,12 +25,6 @@ public class GatedProxy {
 
   @Inject
   Vertx vertx;
-
-  @Inject
-  ServletContext servletContext;
-
-  @Inject
-  RoutingContext context;
 
   private WebClient client;
 
@@ -55,26 +40,6 @@ public class GatedProxy {
     String hostname = uriInfo.getBaseUri().getHost();
 
     LOGGER.info("Proxying request for host:%s path:%s".formatted(hostname, path));
-    if (path.startsWith("app/")) {
-      try {
-        HttpServerRequest req = context.request();
-        HttpServerResponse res = context.response();
-
-        RequestDispatcher dispatcher = servletContext.getRequestDispatcher("/" + path);
-        if (dispatcher != null) {
-          dispatcher.forward(req, res);
-        } else {
-          // Handle the case where the Servlet is not found
-          response.sendError(HttpServletResponse.SC_NOT_FOUND);
-        }
-        return Uni.createFrom().item(Response.ok().build());
-      } catch (ServletException e) {
-        throw new RuntimeException(e);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
     return Panache.withTransaction(() -> Host.findByValidatedName(hostname)
       .onItem().ifNotNull().transformToUni(host -> {
         LOGGER.info("Host: " + host);
@@ -88,7 +53,7 @@ public class GatedProxy {
       }).onItem().ifNull().continueWith(() -> {
         LOGGER.info("Host not found: " + hostname);
         return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Host not found: " + hostname).build();
-      }).onFailure().invoke(throwable -> LOGGER.error("Error occurred: ", throwable))
+      }).onFailure().invoke(throwable -> LOGGER.error("Error occurred", throwable))
       .onFailure().recoverWithItem(() -> Response.status(Response.Status.NOT_FOUND)
         .entity("Host not found: " + hostname).build())
     );
@@ -99,7 +64,7 @@ public class GatedProxy {
       .send()
       .onItem().transformToUni(res -> {
         if (res.statusCode() == 301 || res.statusCode() == 302) {
-          String location = response.getHeader("Location");
+          String location = res.getHeader("Location");
           String newPath = location.replace("https://quarkus.io/", "");
           return fetchContentFromPath(newPath);
         }
