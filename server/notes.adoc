@@ -1,0 +1,7 @@
+= Covered Bridge
+
+=== Features:
+
+* simple http proxy with built in authentication
+* configuration can be in file or database, it will merge
+* UI + Admin deployed as their own services
