@@ -3,9 +3,13 @@ package app.coveredbridge.services.web;
 import app.coveredbridge.data.models.Host;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Vertx;
-import io.vertx.ext.web.client.WebClient;
+import io.vertx.mutiny.core.http.HttpServerRequest;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.core.http.HttpServerResponse;
+import io.vertx.mutiny.ext.web.RoutingContext;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
@@ -21,8 +25,6 @@ import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,10 +39,15 @@ public class GatedProxy {
   ServletContext servletContext;
 
   @Inject
-  HttpServletRequest request;
+  RoutingContext context;
 
-  @Inject
-  HttpServletResponse response;
+  private WebClient client;
+
+  @PostConstruct
+  public void init() {
+    WebClientOptions options = new WebClientOptions().setFollowRedirects(true);
+    client = WebClient.create(vertx, options);
+  }
 
   @GET
   @Path("/{path:.*}")
@@ -50,10 +57,12 @@ public class GatedProxy {
     LOGGER.info("Proxying request for host:%s path:%s".formatted(hostname, path));
     if (path.startsWith("app/")) {
       try {
+        HttpServerRequest req = context.request();
+        HttpServerResponse res = context.response();
+
         RequestDispatcher dispatcher = servletContext.getRequestDispatcher("/" + path);
-        dispatcher.forward(request, response);
         if (dispatcher != null) {
-          dispatcher.forward(request, response);
+          dispatcher.forward(req, res);
         } else {
           // Handle the case where the Servlet is not found
           response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -71,12 +80,11 @@ public class GatedProxy {
         LOGGER.info("Host: " + host);
 
         if (path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".gif") || path.endsWith(".svg")) {
-          return Uni.createFrom().completionStage(fetchImageFromPath(path));
+          return fetchImageFromPath(path);
         }
 
-        return Uni.createFrom().completionStage(
-          fetchContentFromPath(path).thenApply(Response::ok).thenApply(Response.ResponseBuilder::build)
-        );
+        return Uni.createFrom().item(Response.ok(fetchContentFromPath(path)).build());
+
       }).onItem().ifNull().continueWith(() -> {
         LOGGER.info("Host not found: " + hostname);
         return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Host not found: " + hostname).build();
@@ -86,20 +94,16 @@ public class GatedProxy {
     );
   }
 
-  private CompletionStage<String> fetchContentFromPath(String path) {
-    WebClientOptions options = new WebClientOptions().setFollowRedirects(false);
-    WebClient client = WebClient.create(vertx, options);
-
+  private Uni<String> fetchContentFromPath(String path) {
     return client.getAbs("https://quarkus.io/" + path)
       .send()
-      .toCompletionStage()
-      .thenCompose(response -> {
-        if (response.statusCode() == 301 || response.statusCode() == 302) {
+      .onItem().transformToUni(res -> {
+        if (res.statusCode() == 301 || res.statusCode() == 302) {
           String location = response.getHeader("Location");
           String newPath = location.replace("https://quarkus.io/", "");
           return fetchContentFromPath(newPath);
         }
-        return CompletableFuture.completedFuture(modifyContent(response.bodyAsString()));
+        return Uni.createFrom().item(modifyContent(res.bodyAsString()));
       });
   }
 
@@ -125,17 +129,13 @@ public class GatedProxy {
     return modifiedContent;
   }
 
-  private CompletionStage<Response> fetchImageFromPath(String path) {
-    WebClientOptions options = new WebClientOptions().setFollowRedirects(true);
-    WebClient client = WebClient.create(vertx, options);
-
+  private Uni<Response> fetchImageFromPath(String path) {
     return client.getAbs("https://quarkus.io/" + path)
       .send()
-      .toCompletionStage()
-      .thenApply(response -> {
-        byte[] imageData = response.body().getBytes();
-        String contentType = response.getHeader("Content-Type");
-        return Response.ok(imageData).type(contentType).build();
+      .onItem().transformToUni(res -> {
+        byte[] imageData = res.body().getBytes();
+        String contentType = res.getHeader("Content-Type");
+        return Uni.createFrom().item(Response.ok(imageData).type(contentType).build());
       });
   }
 }
