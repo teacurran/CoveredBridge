@@ -3,7 +3,11 @@ package app.coveredbridge.data.models;
 import app.coveredbridge.data.models.dto.MaxIntDto;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.smallrye.mutiny.Uni;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -28,7 +32,7 @@ public class Server extends PanacheEntityBase {
 
   public LocalDateTime seen;
 
-  @Column(nullable = false, columnDefinition="BOOLEAN DEFAULT false")
+  @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
   public boolean isShutdown;
 
   public static Uni<MaxIntDto> findMaxInstanceId() {

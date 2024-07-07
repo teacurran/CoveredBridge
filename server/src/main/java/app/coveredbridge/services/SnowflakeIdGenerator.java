@@ -21,6 +21,13 @@ public class SnowflakeIdGenerator {
 
   HashMap<String, Snowflake> snowflakes = new HashMap<>();
 
+  /**
+   * Generates a unique ID based on the provided identifier name.
+   *
+   * @param idName The identifier name to generate the ID for
+   * @return A unique long ID
+   * @throws HibernateException if there is an error generating the ID
+   */
   public Long generate(String idName) throws HibernateException {
     Snowflake snowflake;
     if (snowflakes.containsKey(idName)) {
@@ -32,6 +39,16 @@ public class SnowflakeIdGenerator {
     return snowflake.nextId();
   }
 
+  /**
+   * Snowflake class that generates unique IDs.
+   * <p>
+   * This generator can handle up to 1024 instances, each generating up to 4096 IDs per millisecond.
+   * <ul>
+   *     <li>INSTANCE_BITS (10 bits): Can handle up to 2^10 = 1024 instances (0-1023 instance IDs).</li>
+   *     <li>SEQUENCE_BITS (12 bits): Each instance can generate up to 2^12 = 4096 IDs per millisecond.</li>
+   * </ul>
+   * </p>
+   */
   static class Snowflake {
     private static final int INSTANCE_BITS = 10;
     private static final int SEQUENCE_BITS = 12;

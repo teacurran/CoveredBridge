@@ -8,6 +8,7 @@
     <groupId>com.terrencecurran.covered-bridge</groupId>
     <artifactId>covered-bridge-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>covered-bridge</artifactId>
