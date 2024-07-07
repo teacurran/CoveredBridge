@@ -1,0 +1,17 @@
+{
+  "organizations": [
+    {
+      "key": "org1",
+      "proxies": [
+        {
+          "key": "proxy1",
+          "hosts": [
+            {
+              "name": "localhost"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
