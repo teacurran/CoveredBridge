@@ -83,19 +83,17 @@ public class ConfigFileLoader {
           orgUnis.add(
             Organization.findOrCreateByKey(orgFromJson.getKey(), snowflakeIdGenerator)
               .onItem().transformToUni(org -> {
-
                 List<Uni<Void>> proxyUniList = new ArrayList<>();
                 for (ProxyType proxyFromJson : orgFromJson.getProxies()) {
                   proxyUniList.add(
                     Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
-                      .onItem().transform(proxy -> upsertHosts(proxyFromJson, proxy)
-                        .onItem().ignore().andContinueWithNull())
+                      .onItem().transformToUni(proxy -> upsertHosts(proxyFromJson, proxy))
                       .onItem().ignore().andContinueWithNull()
                   );
                 }
 
-                return Uni.combine().all().unis(proxyUniList).with(ignored -> org);
-              }).onItem().ignore().andContinueWithNull()
+                return Uni.combine().all().unis(proxyUniList).with(ignored -> null);
+              })
           )
         );
 
@@ -103,12 +101,12 @@ public class ConfigFileLoader {
       });
   }
 
-  private Uni<Proxy> upsertHosts(ProxyType proxyFromJson, Proxy proxy) {
-    List<Uni<Void>> hostUniList = new ArrayList<>();
+  private Uni<Void> upsertHosts(ProxyType proxyFromJson, Proxy proxy) {
+    List<Uni<Host>> hostUniList = new ArrayList<>();
     for (HostType hostFromJson : proxyFromJson.getHosts()) {
       hostUniList.add(
         Host.findOrCreateByName(proxy, hostFromJson.getName(), snowflakeIdGenerator)
-          .onItem().transform(host -> host).replaceWithVoid()
+          .onItem().transform(host -> host)
           .onFailure().recoverWithUni(throwable -> {
             LOGGER.error("Failed to create host: " + hostFromJson.getName(), throwable);
             return Uni.createFrom().failure(throwable);
@@ -116,7 +114,7 @@ public class ConfigFileLoader {
       );
     }
 
-    return Uni.combine().all().unis(hostUniList).with(ignored -> proxy);
+    return Uni.combine().all().unis(hostUniList).with(ignored-> null);
   }
 
 

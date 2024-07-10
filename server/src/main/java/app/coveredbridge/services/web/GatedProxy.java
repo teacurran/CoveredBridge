@@ -48,7 +48,8 @@ public class GatedProxy {
           return fetchImageFromPath(path);
         }
 
-        return Uni.createFrom().item(Response.ok(fetchContentFromPath(path)).build());
+        return fetchContentFromPath(path)
+          .onItem().transform(content -> Response.ok(content).build());
 
       }).onItem().ifNull().continueWith(() -> {
         LOGGER.info("Host not found: " + hostname);
