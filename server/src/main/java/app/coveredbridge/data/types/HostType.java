@@ -1,11 +1,23 @@
 package app.coveredbridge.data.types;
 
 import com.fasterxml.jackson.annotation.JsonRootName;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
-import java.util.List;
-
+@RegisterForReflection
 @JsonRootName("host")
 public class HostType {
 
   private String name;
+
+  public HostType() {
+    // default no-arg constructor
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
 }
