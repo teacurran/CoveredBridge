@@ -1,7 +1,11 @@
 package app.coveredbridge.services;
 
+import app.coveredbridge.data.models.Host;
 import app.coveredbridge.data.models.Organization;
+import app.coveredbridge.data.models.Proxy;
 import app.coveredbridge.data.types.ConfigType;
+import app.coveredbridge.data.types.HostType;
+import app.coveredbridge.data.types.ProxyType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.runtime.StartupEvent;
@@ -27,9 +31,6 @@ public class ConfigFileLoader {
   private static final Logger LOGGER = Logger.getLogger(ConfigFileLoader.class);
 
   @Inject
-  ServerInstance serverInstance;
-
-  @Inject
   SnowflakeIdGenerator snowflakeIdGenerator;
 
   @Inject
@@ -52,11 +53,11 @@ public class ConfigFileLoader {
     // Start a new transaction
     factory.withTransaction(session -> loadConfig().onItem().transform(config -> {
         LOGGER.info("Config loaded: " + config);
-      return config;
-    }))
-    // Subscribe to the Uni to trigger the action
+        return config;
+      }))
+      // Subscribe to the Uni to trigger the action
       .subscribe().with(v -> {
-    });
+      });
   }
 
   public Uni<ConfigType> parseConfigJson(File file) {
@@ -75,15 +76,43 @@ public class ConfigFileLoader {
       .onItem().transformToUni(config -> {
         LOGGER.info("Config loaded: " + config);
 
-        List<Uni<Organization>> orgUnis = new ArrayList<>();
+        List<Uni<Void>> orgUnis = new ArrayList<>();
 
-        config.getOrganizations().forEach(orgFromJson -> {
-          orgUnis.add(Organization.findOrCreateByKey(orgFromJson.getKey(), snowflakeIdGenerator));
-        });
+        config.getOrganizations().forEach(orgFromJson ->
+          orgUnis.add(
+            Organization.findOrCreateByKey(orgFromJson.getKey(), snowflakeIdGenerator)
+              .onItem().transformToUni(org -> {
+
+                List<Uni<Void>> proxyUniList = new ArrayList<>();
+                for (ProxyType proxyFromJson : orgFromJson.getProxies()) {
+                  proxyUniList.add(
+                    Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
+                      .onItem().transform(proxy -> upsertHosts(proxyFromJson, proxy))
+                      .onItem().ignore().andContinueWithNull()
+                  );
+                }
+
+                return Uni.combine().all().unis(proxyUniList).with(ignored -> org);
+              }).onItem().ignore().andContinueWithNull()
+          )
+        );
 
         return Uni.combine().all().unis(orgUnis).discardItems();
-
-      }).onFailure().invoke(throwable -> LOGGER.error("Error loading config", throwable));
+      });
   }
+
+  private Uni<Proxy> upsertHosts(ProxyType proxyFromJson, Proxy proxy) {
+    List<Uni<Void>> hostUniList = new ArrayList<>();
+    for (HostType hostFromJson : proxyFromJson.getHosts()) {
+      hostUniList.add(
+        Host.findOrCreateByName(proxy, hostFromJson.getName(), snowflakeIdGenerator)
+          .onItem().ignore().andContinueWithNull()
+      );
+    }
+
+    return Uni.combine().all().unis(hostUniList).with(ignored -> proxy);
+
+  }
+
 
 }

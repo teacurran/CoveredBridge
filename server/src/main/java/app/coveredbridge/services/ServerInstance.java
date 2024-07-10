@@ -28,6 +28,7 @@ public class ServerInstance {
   Server server;
 
   @Produces
+  @ApplicationScoped
   public Server getServer() {
     return server;
   }
