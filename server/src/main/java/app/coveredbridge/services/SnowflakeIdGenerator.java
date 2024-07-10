@@ -1,6 +1,8 @@
 package app.coveredbridge.services;
 
 import app.coveredbridge.constants.ApplicationConstants;
+import app.coveredbridge.data.models.Server;
+import jakarta.inject.Inject;
 import org.hibernate.HibernateException;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -13,11 +15,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @ApplicationScoped
 public class SnowflakeIdGenerator {
 
-  private final ServerInstance serverInstance;
-
-  SnowflakeIdGenerator(ServerInstance serverInstance) {
-    this.serverInstance = serverInstance;
-  }
+  @Inject
+  Server server;
 
   HashMap<String, Snowflake> snowflakes = new HashMap<>();
 
@@ -33,7 +32,7 @@ public class SnowflakeIdGenerator {
     if (snowflakes.containsKey(idName)) {
       snowflake = snowflakes.get(idName);
     } else {
-      snowflake = new Snowflake(serverInstance.getServer().instanceNumber);
+      snowflake = new Snowflake(server.instanceNumber);
       snowflakes.put(idName, snowflake);
     }
     return snowflake.nextId();

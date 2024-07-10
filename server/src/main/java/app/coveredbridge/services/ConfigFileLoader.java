@@ -3,6 +3,7 @@ package app.coveredbridge.services;
 import app.coveredbridge.data.models.Host;
 import app.coveredbridge.data.models.Organization;
 import app.coveredbridge.data.models.Proxy;
+import app.coveredbridge.data.models.Server;
 import app.coveredbridge.data.types.ConfigType;
 import app.coveredbridge.data.types.HostType;
 import app.coveredbridge.data.types.ProxyType;
@@ -87,7 +88,8 @@ public class ConfigFileLoader {
                 for (ProxyType proxyFromJson : orgFromJson.getProxies()) {
                   proxyUniList.add(
                     Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
-                      .onItem().transform(proxy -> upsertHosts(proxyFromJson, proxy))
+                      .onItem().transform(proxy -> upsertHosts(proxyFromJson, proxy)
+                        .onItem().ignore().andContinueWithNull())
                       .onItem().ignore().andContinueWithNull()
                   );
                 }
@@ -106,12 +108,15 @@ public class ConfigFileLoader {
     for (HostType hostFromJson : proxyFromJson.getHosts()) {
       hostUniList.add(
         Host.findOrCreateByName(proxy, hostFromJson.getName(), snowflakeIdGenerator)
-          .onItem().ignore().andContinueWithNull()
+          .onItem().transform(host -> host).replaceWithVoid()
+          .onFailure().recoverWithUni(throwable -> {
+            LOGGER.error("Failed to create host: " + hostFromJson.getName(), throwable);
+            return Uni.createFrom().failure(throwable);
+          })
       );
     }
 
     return Uni.combine().all().unis(hostUniList).with(ignored -> proxy);
-
   }
 
 

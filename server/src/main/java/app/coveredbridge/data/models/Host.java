@@ -36,7 +36,7 @@ public class Host extends DefaultPanacheEntityWithTimestamps {
 
   public static Uni<Host> findOrCreateByName(Proxy proxy, String name, SnowflakeIdGenerator idGenerator) {
     return findByName(name)
-      .onItem().ifNotNull().transform(org -> org)
+      .onItem().ifNotNull().transform(host -> host)
       .onItem().ifNull().switchTo(() -> {
         Host newItem = new Host();
         newItem.id = idGenerator.generate(Host.class.getSimpleName());
