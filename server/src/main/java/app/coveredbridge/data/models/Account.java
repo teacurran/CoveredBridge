@@ -38,7 +38,7 @@ public class Account extends DefaultPanacheEntityWithTimestamps {
     cascade = CascadeType.ALL,
     orphanRemoval = true
   )
-  public List<Host> hosts = new ArrayList<>();
+  public List<ProxyHost> hosts = new ArrayList<>();
 
   public enum AccountStatus {
     ACTIVE(1),

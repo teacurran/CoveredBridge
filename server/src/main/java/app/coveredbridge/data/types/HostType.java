@@ -8,6 +8,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 public class HostType {
 
   private String name;
+  private boolean isValidated;
 
   public HostType() {
     // default no-arg constructor
@@ -19,5 +20,13 @@ public class HostType {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public boolean getIsValidated() {
+    return isValidated;
+  }
+
+  public void setIsValidated(boolean isValidated) {
+    this.isValidated = isValidated;
   }
 }

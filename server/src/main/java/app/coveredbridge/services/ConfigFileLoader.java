@@ -1,9 +1,8 @@
 package app.coveredbridge.services;
 
-import app.coveredbridge.data.models.Host;
+import app.coveredbridge.data.models.ProxyHost;
 import app.coveredbridge.data.models.Organization;
 import app.coveredbridge.data.models.Proxy;
-import app.coveredbridge.data.models.Server;
 import app.coveredbridge.data.types.ConfigType;
 import app.coveredbridge.data.types.HostType;
 import app.coveredbridge.data.types.ProxyType;
@@ -26,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.smallrye.mutiny.helpers.spies.Spy.onItem;
 
 @ApplicationScoped
 public class ConfigFileLoader {
@@ -102,10 +103,11 @@ public class ConfigFileLoader {
   }
 
   private Uni<Void> upsertHosts(ProxyType proxyFromJson, Proxy proxy) {
-    List<Uni<Host>> hostUniList = new ArrayList<>();
+    List<Uni<ProxyHost>> hostUniList = new ArrayList<>();
     for (HostType hostFromJson : proxyFromJson.getHosts()) {
       hostUniList.add(
-        Host.findOrCreateByName(proxy, hostFromJson.getName(), snowflakeIdGenerator)
+        ProxyHost.findOrCreateByName(proxy, hostFromJson.getName(), snowflakeIdGenerator)
+          .onItem().transformToUni(host -> host.updateFromJson(hostFromJson))
           .onFailure().recoverWithUni(throwable -> {
             LOGGER.error("Failed to create host: " + hostFromJson.getName(), throwable);
             return Uni.createFrom().failure(throwable);

@@ -1,7 +1,7 @@
 package app.coveredbridge.services.web;
 
-import app.coveredbridge.data.models.Host;
 import app.coveredbridge.data.models.Proxy;
+import app.coveredbridge.data.models.ProxyPath;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -42,8 +42,9 @@ public class GatedProxy {
 
     LOGGER.info("Proxying request for host:%s path:%s".formatted(hostname, path));
     return Panache.withTransaction(() -> Proxy.findByHostByName(hostname)
-      .onItem().ifNotNull().transformToUni(proxy -> {
-        LOGGER.info("Proxy: " + proxy);
+      .onItem().ifNotNull().transformToUni(proxy -> findMatchingPath(proxy, path))
+      .onItem().ifNotNull().transformToUni(proxyPath -> {
+        LOGGER.info("Proxy Path: " + proxyPath);
 
         if (path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".gif") || path.endsWith(".svg")) {
           return fetchImageFromPath(path);
@@ -61,7 +62,12 @@ public class GatedProxy {
     );
   }
 
-
+  private Uni<ProxyPath> findMatchingPath(Proxy proxy, String path) {
+    return Uni.createFrom().item(proxy.paths.stream()
+      .filter(p -> path.startsWith(p.path))
+      .findFirst()
+      .orElse(null));
+  }
 
   private Uni<String> fetchContentFromPath(String path) {
     return client.getAbs("https://quarkus.io/" + path)

@@ -10,19 +10,19 @@ import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "paths",
-  uniqueConstraints = @UniqueConstraint(columnNames = {"proxy_id", "source"})
+@Table(name = "proxy_paths",
+  uniqueConstraints = @UniqueConstraint(columnNames = {"proxy_id", "path"})
 )
-public class Path extends DefaultPanacheEntityWithTimestamps {
+public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne(fetch = FetchType.LAZY)
   public Proxy proxy;
 
-  public String source;
+  public String path;
 
   @Column(nullable = false)
   public BigDecimal rank;
 
-  public String destination;
+  public String target;
 }
 

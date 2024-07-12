@@ -1,5 +1,6 @@
 package app.coveredbridge.data.models;
 
+import app.coveredbridge.data.types.HostType;
 import app.coveredbridge.services.SnowflakeIdGenerator;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Column;
@@ -11,8 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Entity
-@Table(name = "hosts")
-public class Host extends DefaultPanacheEntityWithTimestamps {
+@Table(name = "proxy_hosts")
+public class ProxyHost extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne
   public Proxy proxy;
@@ -26,23 +27,23 @@ public class Host extends DefaultPanacheEntityWithTimestamps {
   @ManyToOne
   public Account account;
 
-  public static Uni<Host> findByValidatedName(String value) {
+  public static Uni<ProxyHost> findByValidatedName(String value) {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("name", value);
     parameters.put("validated", true);
     return find("name=:name AND isValidated=:validated", parameters).firstResult();
   }
 
-  public static Uni<Host> findByName(String value) {
+  public static Uni<ProxyHost> findByName(String value) {
     return find("name", value).firstResult();
   }
 
-  public static Uni<Host> findOrCreateByName(Proxy proxy, String name, SnowflakeIdGenerator idGenerator) {
+  public static Uni<ProxyHost> findOrCreateByName(Proxy proxy, String name, SnowflakeIdGenerator idGenerator) {
     return findByName(name)
       .onItem().ifNotNull().transform(host -> host)
       .onItem().ifNull().switchTo(() -> {
-        Host newItem = new Host();
-        newItem.id = idGenerator.generate(Host.class.getSimpleName());
+        ProxyHost newItem = new ProxyHost();
+        newItem.id = idGenerator.generate(ProxyHost.class.getSimpleName());
         newItem.proxy = proxy;
         newItem.name = name;
         // Set other default values if necessary
@@ -50,4 +51,9 @@ public class Host extends DefaultPanacheEntityWithTimestamps {
       });
   }
 
+  public Uni<ProxyHost> updateFromJson(HostType hostFromJson) {
+    this.name = hostFromJson.getName();
+    this.isValidated = hostFromJson.getIsValidated();
+    return this.persistAndFlush();
+  }
 }

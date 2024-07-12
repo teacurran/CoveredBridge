@@ -20,11 +20,12 @@ import java.util.List;
 @NamedQuery(name = "Proxy.findByHostByName", query = """
   SELECT P
   FROM Proxy P
-  JOIN P.hosts H
-  JOIN P.organization
-  LEFT JOIN Fetch P.paths Pa
-  WHERE H.name = :host
-  AND H.isValidated = true
+  JOIN P.hosts PH
+  JOIN Fetch P.organization
+  LEFT JOIN Fetch P.paths PP
+  WHERE PH.name = :host
+  AND PH.isValidated = true
+  ORDER BY PP.rank DESC
   """)
 public class Proxy extends DefaultPanacheEntityWithTimestamps {
 
@@ -38,14 +39,14 @@ public class Proxy extends DefaultPanacheEntityWithTimestamps {
     cascade = CascadeType.ALL,
     orphanRemoval = true
   )
-  public List<Host> hosts = new ArrayList<>();
+  public List<ProxyHost> hosts = new ArrayList<>();
 
   @OneToMany(
     mappedBy = "proxy",
     cascade = CascadeType.ALL,
     orphanRemoval = true
   )
-  public List<Path> paths = new ArrayList<>();
+  public List<ProxyPath> paths = new ArrayList<>();
 
   public static Uni<Proxy> findByKey(String key) {
     return find("key", key).firstResult();

@@ -7,7 +7,14 @@
           "key": "proxy1",
           "hosts": [
             {
-              "name": "localhost"
+              "name": "localhost",
+              "isValidated": true
+            }
+          ],
+          "paths": [
+            {
+              "path": "/api",
+              "target": "http://localhost:3000"
             }
           ]
         }
