@@ -106,7 +106,6 @@ public class ConfigFileLoader {
     for (HostType hostFromJson : proxyFromJson.getHosts()) {
       hostUniList.add(
         Host.findOrCreateByName(proxy, hostFromJson.getName(), snowflakeIdGenerator)
-          .onItem().transform(host -> host)
           .onFailure().recoverWithUni(throwable -> {
             LOGGER.error("Failed to create host: " + hostFromJson.getName(), throwable);
             return Uni.createFrom().failure(throwable);

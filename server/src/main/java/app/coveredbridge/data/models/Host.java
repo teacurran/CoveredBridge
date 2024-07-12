@@ -5,11 +5,13 @@ import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Entity
+@Table(name = "hosts")
 public class Host extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne
@@ -17,7 +19,8 @@ public class Host extends DefaultPanacheEntityWithTimestamps {
 
   public String name;
 
-  @Column(nullable = false, columnDefinition="BOOLEAN DEFAULT false")
+  @Column(name = "is_validated",
+    nullable = false, columnDefinition="BOOLEAN DEFAULT false")
   public boolean isValidated;
 
   @ManyToOne

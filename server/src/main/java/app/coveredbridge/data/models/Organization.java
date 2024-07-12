@@ -2,16 +2,16 @@ package app.coveredbridge.data.models;
 
 import app.coveredbridge.services.SnowflakeIdGenerator;
 import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.Transient;
+import jakarta.persistence.Table;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "organizations")
 public class Organization extends DefaultPanacheEntityWithTimestamps {
 
   @Column(nullable = true, unique = true)

@@ -10,7 +10,9 @@ import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"proxy_id", "source"}))
+@Table(name = "paths",
+  uniqueConstraints = @UniqueConstraint(columnNames = {"proxy_id", "source"})
+)
 public class Path extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne(fetch = FetchType.LAZY)

@@ -5,10 +5,12 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
 
 import java.util.Set;
 
 @Entity
+@Table(name = "permission_groups")
 public class PermissionGroup extends DefaultPanacheEntityWithTimestamps {
   public String code;
   public String name;

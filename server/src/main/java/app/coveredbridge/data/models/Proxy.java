@@ -1,15 +1,32 @@
 package app.coveredbridge.data.models;
 
 import app.coveredbridge.services.SnowflakeIdGenerator;
+import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"organization_id", "key"}))
-public class Proxy extends DefaultPanacheEntityWithTimestamps{
+@Table(name="proxies",
+  uniqueConstraints = @UniqueConstraint(columnNames = {"organization_id", "key"}))
+@NamedQuery(name = "Proxy.findByHostByName", query = """
+  SELECT P
+  FROM Proxy P
+  JOIN P.hosts H
+  JOIN P.organization
+  LEFT JOIN Fetch P.paths Pa
+  WHERE H.name = :host
+  AND H.isValidated = true
+  """)
+public class Proxy extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne
   public Organization organization;
@@ -45,6 +62,12 @@ public class Proxy extends DefaultPanacheEntityWithTimestamps{
         // Set other default values if necessary
         return newProxy.persist();
       });
+  }
+
+  public static Uni<Proxy> findByHostByName(String host) {
+    return find("#Proxy.findByHostByName",
+      Parameters.with("host", host).map()
+    ).firstResult();
   }
 
 }
