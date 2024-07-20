@@ -42,23 +42,22 @@ public class GatedProxy {
 
     LOGGER.info("Proxying request for host:%s path:%s".formatted(hostname, path));
     return Panache.withTransaction(() -> Proxy.findByHostByName(hostname)
-      .onItem().ifNotNull().transformToUni(proxy -> findMatchingPath(proxy, path))
-      .onItem().ifNotNull().transformToUni(proxyPath -> {
-        LOGGER.info("Proxy Path: " + proxyPath);
-
-        if (path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".gif") || path.endsWith(".svg")) {
-          return fetchImageFromPath(path);
+      .onItem().transformToUni(proxy -> {
+        if (proxy == null) {
+          return Uni.createFrom().item(Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Host not found: " + hostname).build());
         }
+        return findMatchingPath(proxy, path)
+          .onItem().transformToUni(proxyPath -> {
+            if (proxyPath == null) {
+              return Uni.createFrom().item(Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Path not found: " + path).build());
+            }
 
-        return fetchContentFromPath(path)
-          .onItem().transform(content -> Response.ok(content).build());
-
-      }).onItem().ifNull().continueWith(() -> {
-        LOGGER.info("Host not found: " + hostname);
-        return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Host not found: " + hostname).build();
+            return fetchContentFromPath(path);
+          })
+          .onItem().transformToUni(content -> Uni.createFrom().item(Response.ok(content).build()));
       }).onFailure().invoke(throwable -> LOGGER.error("Error occurred", throwable))
-      .onFailure().recoverWithItem(() -> Response.status(Response.Status.NOT_FOUND)
-        .entity("Host not found: " + hostname).build())
+      .onFailure().recoverWithUni(() -> Uni.createFrom().item(Response.status(Response.Status.NOT_FOUND)
+        .entity("Host not foundX: " + hostname).build()))
     );
   }
 
