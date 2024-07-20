@@ -3,8 +3,10 @@ package app.coveredbridge.services;
 import app.coveredbridge.data.models.ProxyHost;
 import app.coveredbridge.data.models.Organization;
 import app.coveredbridge.data.models.Proxy;
+import app.coveredbridge.data.models.ProxyPath;
 import app.coveredbridge.data.types.ConfigType;
 import app.coveredbridge.data.types.HostType;
+import app.coveredbridge.data.types.ProxyPathType;
 import app.coveredbridge.data.types.ProxyType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
@@ -84,13 +86,9 @@ public class ConfigFileLoader {
           orgUnis.add(
             Organization.findOrCreateByKey(orgFromJson.getKey(), snowflakeIdGenerator)
               .onItem().transformToUni(org -> {
-                List<Uni<Void>> proxyUniList = new ArrayList<>();
+                List<Uni<Proxy>> proxyUniList = new ArrayList<>();
                 for (ProxyType proxyFromJson : orgFromJson.getProxies()) {
-                  proxyUniList.add(
-                    Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
-                      .onItem().transformToUni(proxy -> upsertHosts(proxyFromJson, proxy))
-                      .onItem().ignore().andContinueWithNull()
-                  );
+                  proxyUniList.add(findOrCreateProxy(org, proxyFromJson));
                 }
 
                 return Uni.combine().all().unis(proxyUniList).with(ignored -> null);
@@ -100,6 +98,31 @@ public class ConfigFileLoader {
 
         return Uni.combine().all().unis(orgUnis).discardItems();
       });
+  }
+
+  private Uni<Proxy> findOrCreateProxy(Organization org, ProxyType proxyFromJson) {
+    return Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
+      .onItem().transformToUni(proxy -> {
+        return upsertHosts(proxyFromJson, proxy)
+          .chain(() -> findOrCreateProxyPaths(proxyFromJson, proxy))
+          .onItem().ignore().andSwitchTo(Uni.createFrom().item(proxy));
+      });
+  }
+
+  private Uni<ProxyPath> findOrCreateProxyPaths(ProxyType proxyFromJson, Proxy proxy) {
+    List<Uni<ProxyPath>> pathUniList = new ArrayList<>();
+    for (ProxyPathType pathFromJson : proxyFromJson.getPaths()) {
+      pathUniList.add(
+        ProxyPath.findOrCreateByProxyAndPath(proxy, pathFromJson.getPath(), snowflakeIdGenerator)
+          .onItem().transformToUni(path -> path.updateFromJson(pathFromJson))
+          .onFailure().recoverWithUni(throwable -> {
+            LOGGER.error("Failed to create path: " + pathFromJson.getPath(), throwable);
+            return Uni.createFrom().failure(throwable);
+          })
+      );
+    }
+
+    return Uni.combine().all().unis(pathUniList).with(ignored -> null);
   }
 
   private Uni<Void> upsertHosts(ProxyType proxyFromJson, Proxy proxy) {

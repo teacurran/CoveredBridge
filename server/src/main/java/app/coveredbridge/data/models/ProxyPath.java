@@ -1,5 +1,8 @@
 package app.coveredbridge.data.models;
 
+import app.coveredbridge.data.types.ProxyPathType;
+import app.coveredbridge.services.SnowflakeIdGenerator;
+import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -24,5 +27,27 @@ public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
   public BigDecimal rank;
 
   public String target;
+
+  public static Uni<ProxyPath> findByProxyAndPath(Proxy proxy, String path) {
+    return find("proxy = ?1 AND path = ?2", proxy, path).firstResult();
+  }
+
+  public static Uni<ProxyPath> findOrCreateByProxyAndPath(Proxy proxy, String path, SnowflakeIdGenerator idGenerator) {
+    return findByProxyAndPath(proxy, path)
+      .onItem().ifNotNull().transform(p -> p)
+      .onItem().ifNull().switchTo(() -> {
+        ProxyPath newPath = new ProxyPath();
+        newPath.id = idGenerator.generate(ProxyPath.class.getSimpleName());
+        newPath.proxy = proxy;
+        newPath.path = path;
+        return newPath.persist();
+      });
+  }
+
+  public Uni<ProxyPath> updateFromJson(ProxyPathType json) {
+    this.path = json.getPath();
+    this.target = json.getTarget();
+    return this.persistAndFlush();
+  }
 }
 

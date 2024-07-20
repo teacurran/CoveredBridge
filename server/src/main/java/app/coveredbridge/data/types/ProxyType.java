@@ -13,6 +13,8 @@ public class ProxyType {
 
   private List<HostType> hosts;
 
+  private List<ProxyPathType> paths;
+
   public ProxyType() {
     // default no-arg constructor
   }
@@ -31,5 +33,13 @@ public class ProxyType {
 
   public void setHosts(List<HostType> hosts) {
     this.hosts = hosts;
+  }
+
+  public List<ProxyPathType> getPaths() {
+    return paths;
+  }
+
+  public void setPaths(List<ProxyPathType> paths) {
+    this.paths = paths;
   }
 }
