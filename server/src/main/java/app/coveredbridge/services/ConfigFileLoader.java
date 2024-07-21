@@ -103,11 +103,9 @@ public class ConfigFileLoader {
 
   private Uni<Proxy> findOrCreateProxy(Organization org, ProxyType proxyFromJson) {
     return Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
-      .onItem().transformToUni(proxy -> {
-        return findOrCreateProxyPaths(proxyFromJson, proxy)
-          .chain(() -> upsertHosts(proxyFromJson, proxy))
-          .chain(() -> Uni.createFrom().item(proxy));
-      });
+      .onItem()
+      .call(proxy -> upsertHosts(proxyFromJson, proxy).replaceWith(Uni.createFrom().item(proxy)))
+      .call(proxy -> findOrCreateProxyPaths(proxyFromJson, proxy).replaceWith(Uni.createFrom().item(proxy)));
   }
 
   private Uni<Void> findOrCreateProxyPaths(ProxyType proxyFromJson, Proxy proxy) {
@@ -142,8 +140,8 @@ public class ConfigFileLoader {
     }
 
     return Multi.createFrom().iterable(hostUniList).onItem().transformToUniAndConcatenate(proxyHostUni -> {
-      return Uni.createFrom().voidItem();
-    }).toUni();
+      return proxyHostUni;
+    }).collect().asList().replaceWith(Uni.createFrom().voidItem());
 
 //    merged.toUni()
 //
