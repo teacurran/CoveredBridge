@@ -104,11 +104,11 @@ public class ConfigFileLoader {
   private Uni<Proxy> findOrCreateProxy(Organization org, ProxyType proxyFromJson) {
     return Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
       .onItem()
-      .call(proxy -> upsertHosts(proxyFromJson, proxy).replaceWith(Uni.createFrom().item(proxy)))
-      .call(proxy -> findOrCreateProxyPaths(proxyFromJson, proxy).replaceWith(Uni.createFrom().item(proxy)));
+      .call(proxy -> findOrCreateProxyHosts(proxy, proxyFromJson))
+      .call(proxy -> findOrCreateProxyPaths(proxy, proxyFromJson).replaceWith(Uni.createFrom().item(proxy)));
   }
 
-  private Uni<Void> findOrCreateProxyPaths(ProxyType proxyFromJson, Proxy proxy) {
+  private Uni<Proxy> findOrCreateProxyPaths(Proxy proxy, ProxyType proxyFromJson) {
     List<Uni<ProxyPath>> pathUniList = new ArrayList<>();
     for (ProxyPathType pathFromJson : proxyFromJson.getPaths()) {
       pathUniList.add(
@@ -121,12 +121,13 @@ public class ConfigFileLoader {
       );
     }
 
-    return Multi.createFrom().iterable(pathUniList).onItem().transformToUniAndConcatenate(proxyPathUni -> {
-      return proxyPathUni;
-    }).collect().asList().replaceWith(Uni.createFrom().voidItem());
+    return Multi.createFrom().iterable(pathUniList)
+      .onItem()
+      .transformToUniAndConcatenate(proxyPathUni -> proxyPathUni)
+      .collect().asList().replaceWith(Uni.createFrom().item(proxy));
   }
 
-  private Uni<Void> upsertHosts(ProxyType proxyFromJson, Proxy proxy) {
+  private Uni<Proxy> findOrCreateProxyHosts(Proxy proxy, ProxyType proxyFromJson) {
     List<Uni<ProxyHost>> hostUniList = new ArrayList<>();
     for (HostType hostFromJson : proxyFromJson.getHosts()) {
       hostUniList.add(
@@ -139,13 +140,10 @@ public class ConfigFileLoader {
       );
     }
 
-    return Multi.createFrom().iterable(hostUniList).onItem().transformToUniAndConcatenate(proxyHostUni -> {
-      return proxyHostUni;
-    }).collect().asList().replaceWith(Uni.createFrom().voidItem());
-
-//    merged.toUni()
-//
-//    //return Uni.combine().all().unis(hostUniList).collectFailures().discardItems();
+    return Multi.createFrom().iterable(hostUniList)
+      .onItem()
+      .transformToUniAndConcatenate(proxyHostUni -> proxyHostUni)
+      .collect().asList().replaceWith(Uni.createFrom().item(proxy));
   }
 
 
