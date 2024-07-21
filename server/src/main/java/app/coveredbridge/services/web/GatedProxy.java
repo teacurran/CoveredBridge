@@ -2,6 +2,7 @@ package app.coveredbridge.services.web;
 
 import app.coveredbridge.data.models.Proxy;
 import app.coveredbridge.data.models.ProxyPath;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -61,14 +62,17 @@ public class GatedProxy {
     );
   }
 
-  private Uni<ProxyPath> findMatchingPath(Proxy proxy, String path) {
+  public Uni<ProxyPath> findMatchingPath(Proxy proxy, String path) {
     return Uni.createFrom().item(proxy.paths.stream()
-      .filter(p -> path.startsWith(p.path))
+      .filter(p -> {
+        return path.startsWith(p.path);
+      })
       .findFirst()
       .orElse(null));
   }
 
-  private Uni<String> fetchContentFromPath(String path) {
+  @WithSpan("GatedProxy.fetchContentFromPath")
+  public Uni<String> fetchContentFromPath(String path) {
     return client.getAbs("https://quarkus.io/" + path)
       .send()
       .onItem().transformToUni(res -> {
@@ -81,7 +85,8 @@ public class GatedProxy {
       });
   }
 
-  private String modifyContent(String content) {
+  @WithSpan("GatedProxy.modifyContent")
+  public String modifyContent(String content) {
     Pattern pattern = Pattern.compile("\\b\\w{6}\\b(?![^<]*>)");
     Matcher matcher = pattern.matcher(content);
     StringBuilder sb = new StringBuilder();
