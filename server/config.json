@@ -9,6 +9,10 @@
             {
               "name": "localhost",
               "isValidated": true
+            },
+            {
+              "name": "grilledcheese.com",
+              "isValidated": true
             }
           ],
           "paths": [
@@ -18,7 +22,7 @@
             },
             {
               "path": "/*",
-              "target": "http://localhost:8001"
+              "target": "http://localhost:3000"
             }
           ]
         }

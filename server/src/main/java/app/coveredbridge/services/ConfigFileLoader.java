@@ -13,6 +13,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -103,13 +104,13 @@ public class ConfigFileLoader {
   private Uni<Proxy> findOrCreateProxy(Organization org, ProxyType proxyFromJson) {
     return Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
       .onItem().transformToUni(proxy -> {
-        return upsertHosts(proxyFromJson, proxy)
-          .chain(() -> findOrCreateProxyPaths(proxyFromJson, proxy))
-          .onItem().ignore().andSwitchTo(Uni.createFrom().item(proxy));
+        return findOrCreateProxyPaths(proxyFromJson, proxy)
+          .chain(() -> upsertHosts(proxyFromJson, proxy))
+          .chain(() -> Uni.createFrom().item(proxy));
       });
   }
 
-  private Uni<ProxyPath> findOrCreateProxyPaths(ProxyType proxyFromJson, Proxy proxy) {
+  private Uni<Void> findOrCreateProxyPaths(ProxyType proxyFromJson, Proxy proxy) {
     List<Uni<ProxyPath>> pathUniList = new ArrayList<>();
     for (ProxyPathType pathFromJson : proxyFromJson.getPaths()) {
       pathUniList.add(
@@ -122,7 +123,9 @@ public class ConfigFileLoader {
       );
     }
 
-    return Uni.combine().all().unis(pathUniList).with(ignored -> null);
+    return Multi.createFrom().iterable(pathUniList).onItem().transformToUniAndConcatenate(proxyPathUni -> {
+      return proxyPathUni;
+    }).collect().asList().replaceWith(Uni.createFrom().voidItem());
   }
 
   private Uni<Void> upsertHosts(ProxyType proxyFromJson, Proxy proxy) {
@@ -138,7 +141,13 @@ public class ConfigFileLoader {
       );
     }
 
-    return Uni.combine().all().unis(hostUniList).with(ignored-> null);
+    return Multi.createFrom().iterable(hostUniList).onItem().transformToUniAndConcatenate(proxyHostUni -> {
+      return Uni.createFrom().voidItem();
+    }).toUni();
+
+//    merged.toUni()
+//
+//    //return Uni.combine().all().unis(hostUniList).collectFailures().discardItems();
   }
 
 

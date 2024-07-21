@@ -34,10 +34,13 @@ public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
 
   public static Uni<ProxyPath> findOrCreateByProxyAndPath(Proxy proxy, String path, SnowflakeIdGenerator idGenerator) {
     return findByProxyAndPath(proxy, path)
-      .onItem().ifNotNull().transform(p -> p)
-      .onItem().ifNull().switchTo(() -> {
+      .onItem().transformToUni(proxyPath -> {
+        if (proxyPath != null) {
+          return Uni.createFrom().item(proxyPath);
+        }
         ProxyPath newPath = new ProxyPath();
         newPath.id = idGenerator.generate(ProxyPath.class.getSimpleName());
+        newPath.rank = new BigDecimal(0);
         newPath.proxy = proxy;
         newPath.path = path;
         return newPath.persist();

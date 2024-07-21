@@ -9,4 +9,8 @@ public class MaxIntDto {
   public MaxIntDto(int maxValue) {
     this.maxValue = maxValue;
   }
+
+  public MaxIntDto(Integer maxValue) {
+    this.maxValue = maxValue;
+  }
 }
