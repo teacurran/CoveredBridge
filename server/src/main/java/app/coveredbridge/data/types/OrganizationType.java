@@ -9,10 +9,10 @@ import java.util.List;
 @JsonRootName("organization")
 public class OrganizationType {
 
-  private String key;
-
+  String key;
   List<ProxyType> proxies;
   List<GroupType> groups;
+  List<AccountType> accounts;
 
   public OrganizationType() {
     // default no-arg constructor
@@ -40,5 +40,13 @@ public class OrganizationType {
 
   public void setGroups(List<GroupType> groups) {
     this.groups = groups;
+  }
+
+  public List<AccountType> getAccounts() {
+    return accounts;
+  }
+
+  public void setAccounts(List<AccountType> accounts) {
+    this.accounts = accounts;
   }
 }

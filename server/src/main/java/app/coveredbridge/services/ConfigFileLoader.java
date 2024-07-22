@@ -1,5 +1,6 @@
 package app.coveredbridge.services;
 
+import app.coveredbridge.data.models.Account;
 import app.coveredbridge.data.models.Group;
 import app.coveredbridge.data.models.ProxyHost;
 import app.coveredbridge.data.models.Organization;
@@ -90,6 +91,7 @@ public class ConfigFileLoader {
             Organization.findOrCreateByKey(orgFromJson.getKey(), snowflakeIdGenerator)
               .onItem()
               .call(org -> findOrCreateGroups(org, orgFromJson))
+              .call(org -> findOrCreateAccounts(org, orgFromJson))
               .call(org -> {
                 List<Uni<Proxy>> proxyUniList = new ArrayList<>();
                 for (ProxyType proxyFromJson : orgFromJson.getProxies()) {
@@ -110,6 +112,20 @@ public class ConfigFileLoader {
       .onItem()
       .call(proxy -> findOrCreateProxyHosts(proxy, proxyFromJson))
       .call(proxy -> findOrCreateProxyPaths(proxy, proxyFromJson).replaceWith(Uni.createFrom().item(proxy)));
+  }
+
+  public Uni<Organization> findOrCreateAccounts(Organization org, OrganizationType orgFromJson) {
+    return Multi.createFrom().iterable(orgFromJson.getAccounts())
+      .onItem()
+      .transformToUniAndConcatenate(accountFromJson -> {
+        return Account.findOrCreateByUsername(org, accountFromJson.getUsername(), snowflakeIdGenerator)
+          .onItem().transformToUni(account -> account.updateFromJson(accountFromJson))
+          .onFailure().recoverWithUni(throwable -> {
+            LOGGER.error("Failed to create account: " + accountFromJson.getUsername(), throwable);
+            return Uni.createFrom().failure(throwable);
+          });
+      })
+      .collect().asList().replaceWith(Uni.createFrom().item(org));
   }
 
   private Uni<Organization> findOrCreateGroups(Organization org, OrganizationType orgFromJson) {
