@@ -15,9 +15,9 @@ public class Permission extends DefaultPanacheEntityWithTimestamps {
   public String description;
 
   @ManyToMany
-  @JoinTable(name = "permission_group_permissions", joinColumns = { @JoinColumn(name = "permission_id") },
-    inverseJoinColumns = { @JoinColumn(name = "permission_group_id") })
-  public Set<PermissionGroup> permissionGroups;
+  @JoinTable(name = "permission_groups", joinColumns = { @JoinColumn(name = "permission_id") },
+    inverseJoinColumns = { @JoinColumn(name = "group_id") })
+  public Set<Group> groups;
 
   @ManyToMany
   @JoinTable(name = "account_permissions", joinColumns = { @JoinColumn(name = "permission_id") },

@@ -1,11 +1,13 @@
 package app.coveredbridge.services;
 
+import app.coveredbridge.data.models.Group;
 import app.coveredbridge.data.models.ProxyHost;
 import app.coveredbridge.data.models.Organization;
 import app.coveredbridge.data.models.Proxy;
 import app.coveredbridge.data.models.ProxyPath;
 import app.coveredbridge.data.types.ConfigType;
 import app.coveredbridge.data.types.HostType;
+import app.coveredbridge.data.types.OrganizationType;
 import app.coveredbridge.data.types.ProxyPathType;
 import app.coveredbridge.data.types.ProxyType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,14 +88,16 @@ public class ConfigFileLoader {
         config.getOrganizations().forEach(orgFromJson ->
           orgUnis.add(
             Organization.findOrCreateByKey(orgFromJson.getKey(), snowflakeIdGenerator)
-              .onItem().transformToUni(org -> {
+              .onItem()
+              .call(org -> findOrCreateGroups(org, orgFromJson))
+              .call(org -> {
                 List<Uni<Proxy>> proxyUniList = new ArrayList<>();
                 for (ProxyType proxyFromJson : orgFromJson.getProxies()) {
                   proxyUniList.add(findOrCreateProxy(org, proxyFromJson));
                 }
 
                 return Uni.combine().all().unis(proxyUniList).with(ignored -> null);
-              })
+              }).replaceWith(Uni.createFrom().nullItem())
           )
         );
 
@@ -106,6 +110,15 @@ public class ConfigFileLoader {
       .onItem()
       .call(proxy -> findOrCreateProxyHosts(proxy, proxyFromJson))
       .call(proxy -> findOrCreateProxyPaths(proxy, proxyFromJson).replaceWith(Uni.createFrom().item(proxy)));
+  }
+
+  private Uni<Organization> findOrCreateGroups(Organization org, OrganizationType orgFromJson) {
+    return Multi.createFrom().iterable(orgFromJson.getGroups())
+      .onItem()
+      .transformToUniAndConcatenate(groupFromJson -> {
+        return Group.findOrCreateByName(org, groupFromJson.getName(), snowflakeIdGenerator);
+      })
+      .collect().asList().replaceWith(Uni.createFrom().item(org));
   }
 
   private Uni<Proxy> findOrCreateProxyPaths(Proxy proxy, ProxyType proxyFromJson) {

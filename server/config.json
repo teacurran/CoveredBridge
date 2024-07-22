@@ -2,6 +2,15 @@
   "organizations": [
     {
       "key": "org1",
+      "name": "Example Organization",
+      "groups": [
+        {
+          "name": "Admin"
+        },
+        {
+          "name": "Customer Support"
+        }
+      ],
       "proxies": [
         {
           "key": "proxy1",
@@ -17,12 +26,55 @@
           ],
           "paths": [
             {
-              "path": "/api",
+              "path": "php",
+              "target": "http://example-php"
+            },
+            {
+              "path": "php/secure",
+              "target": "http://example-php/secure",
+              "secure": true
+            },
+            {
+              "path": "php/admin",
+              "target": "http://example-php/admin",
+              "secure": true,
+              "groups": ["admin"]
+            },
+            {
+              "path": "api",
               "target": "http://localhost:3000"
             },
             {
               "path": "/*",
               "target": "http://localhost:3000"
+            }
+          ]
+        }
+      ],
+      "accounts": [
+        {
+          "username": "user1",
+          "password": "password",
+          "groups": ["Admin"],
+          "emails": [
+            {
+              "email": "user1@grilledcheese.com",
+              "isValidated": true
+            },
+            {
+              "email": "personalemail1@example.com",
+              "isValidated": false
+            }
+          ]
+        },
+        {
+          "username": "user2",
+          "password": "password",
+          "groups": ["Customer Support"],
+          "phone_numbers": [
+            {
+              "phone_number": "+1 617-605-9476",
+              "isValidated": true
             }
           ]
         }

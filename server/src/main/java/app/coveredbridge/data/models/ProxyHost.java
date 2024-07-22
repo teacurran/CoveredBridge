@@ -24,9 +24,6 @@ public class ProxyHost extends DefaultPanacheEntityWithTimestamps {
     nullable = false, columnDefinition="BOOLEAN DEFAULT false")
   public boolean isValidated;
 
-  @ManyToOne
-  public Account account;
-
   public static Uni<ProxyHost> findByValidatedName(String value) {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("name", value);

@@ -12,6 +12,7 @@ public class OrganizationType {
   private String key;
 
   List<ProxyType> proxies;
+  List<GroupType> groups;
 
   public OrganizationType() {
     // default no-arg constructor
@@ -31,5 +32,13 @@ public class OrganizationType {
 
   public void setProxies(List<ProxyType> proxies) {
     this.proxies = proxies;
+  }
+
+  public List<GroupType> getGroups() {
+    return groups;
+  }
+
+  public void setGroups(List<GroupType> groups) {
+    this.groups = groups;
   }
 }
