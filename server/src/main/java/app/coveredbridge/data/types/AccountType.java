@@ -8,6 +8,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 public class AccountType {
   String username;
   String password;
+  String status;
 
   public String getUsername() {
     return username;
@@ -23,5 +24,13 @@ public class AccountType {
 
   public void setPassword(String password) {
     this.password = password;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
   }
 }

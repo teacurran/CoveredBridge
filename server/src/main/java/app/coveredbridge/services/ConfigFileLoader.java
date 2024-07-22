@@ -117,14 +117,7 @@ public class ConfigFileLoader {
   public Uni<Organization> findOrCreateAccounts(Organization org, OrganizationType orgFromJson) {
     return Multi.createFrom().iterable(orgFromJson.getAccounts())
       .onItem()
-      .transformToUniAndConcatenate(accountFromJson -> {
-        return Account.findOrCreateByUsername(org, accountFromJson.getUsername(), snowflakeIdGenerator)
-          .onItem().transformToUni(account -> account.updateFromJson(accountFromJson))
-          .onFailure().recoverWithUni(throwable -> {
-            LOGGER.error("Failed to create account: " + accountFromJson.getUsername(), throwable);
-            return Uni.createFrom().failure(throwable);
-          });
-      })
+      .transformToUniAndConcatenate(accountFromJson -> Account.createOrUpdateFromJson(org, accountFromJson, snowflakeIdGenerator))
       .collect().asList().replaceWith(Uni.createFrom().item(org));
   }
 

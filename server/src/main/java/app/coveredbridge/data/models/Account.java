@@ -1,19 +1,16 @@
 package app.coveredbridge.data.models;
 
 import app.coveredbridge.data.types.AccountType;
+import app.coveredbridge.services.ConfigFileLoader;
 import app.coveredbridge.services.SnowflakeIdGenerator;
 import app.coveredbridge.utils.EncryptionUtil;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
-import io.quarkus.hibernate.reactive.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
-import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.*;
+import org.jboss.logging.Logger;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -25,11 +22,15 @@ import java.util.Set;
   AND a.username = :username
   """)
 public class Account extends DefaultPanacheEntityWithTimestamps {
+  private static final Logger LOGGER = Logger.getLogger(Account.class);
+
   public static final String QUERY_BY_ORG_AND_USERNAME = "Account.findByOrgAndUsername";
 
   public String username;
   public String passwordEncrypted;
   public String passwordSalt;
+
+  @Enumerated(EnumType.STRING)
   public AccountStatus status;
 
   @Transient
@@ -49,27 +50,18 @@ public class Account extends DefaultPanacheEntityWithTimestamps {
   public Set<Permission> permissions;
 
   public enum AccountStatus {
-    ACTIVE(1),
-    DISABLED(2),
-    SUSPENDED(3),
-    BANNED(4);
+    ACTIVE,
+    DISABLED,
+    SUSPENDED,
+    BANNED;
 
-    private final int value;
-    private AccountStatus(int value) {
-      this.value = value;
-    }
-
-    public static AccountStatus fromValue(int id) {
+    public static AccountStatus fromName(String name) {
       for (AccountStatus item : AccountStatus.values()) {
-        if (item.getValue() == id) {
+        if (item.name().equalsIgnoreCase(name)) {
           return item;
         }
       }
       return null;
-    }
-
-    public int getValue() {
-      return value;
     }
   }
 
@@ -118,6 +110,30 @@ public class Account extends DefaultPanacheEntityWithTimestamps {
         newItem.username  = username;
         return newItem.persist();
       });
+  }
+
+  public static Uni<Account> createOrUpdateFromJson(Organization organization, AccountType accountJson, SnowflakeIdGenerator idGenerator) {
+    return findByOrgAndUsername(organization, accountJson.getUsername())
+      .onItem()
+      .call(item -> {
+      if (item == null) {
+        item = new Account();
+        item.id = idGenerator.generate(Account.class.getSimpleName());
+        item.organization = organization;
+        item.username = accountJson.getUsername();
+        if (accountJson.getPassword() != null) {
+          item.password = accountJson.getPassword();
+        }
+      }
+
+      item.status = AccountStatus.fromName(accountJson.getStatus());
+      if (item.status == null) {
+        LOGGER.warn("Status '" + accountJson.getStatus() + "' not valid for account:" + item.id + ". setting to disabled");
+        item.status = AccountStatus.DISABLED;
+      }
+
+      return item.persistAndFlush();
+    });
   }
 
   public Uni<Account> updateFromJson(AccountType accountFromJson) {

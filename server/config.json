@@ -65,7 +65,8 @@
               "email": "personalemail1@example.com",
               "isValidated": false
             }
-          ]
+          ],
+          "status": "ACTIVE"
         },
         {
           "username": "user2",
@@ -76,7 +77,8 @@
               "phone_number": "+1 617-605-9476",
               "isValidated": true
             }
-          ]
+          ],
+          "status": "DISABLED"
         }
       ]
     }
