@@ -27,7 +27,7 @@ public class SnowflakeIdGenerator {
    * @return A unique long ID
    * @throws HibernateException if there is an error generating the ID
    */
-  public Long generate(String idName) throws HibernateException {
+  public String generate(String idName) throws HibernateException {
     Snowflake snowflake;
     if (snowflakes.containsKey(idName)) {
       snowflake = snowflakes.get(idName);
@@ -35,7 +35,8 @@ public class SnowflakeIdGenerator {
       snowflake = new Snowflake(server.instanceNumber);
       snowflakes.put(idName, snowflake);
     }
-    return snowflake.nextId();
+    long newId = snowflake.nextId();
+    return Long.toString(newId, Character.MAX_RADIX);
   }
 
   /**

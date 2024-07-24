@@ -11,7 +11,8 @@ import java.time.Instant;
 public abstract class DefaultPanacheEntityWithTimestamps extends PanacheEntityBase {
 
   @Id
-  public Long id;
+  @Column(columnDefinition = "CHAR(13)", length = 13)
+  public String id;
 
   @CreationTimestamp
   @Column(name="created_at", nullable = false, updatable = false)
