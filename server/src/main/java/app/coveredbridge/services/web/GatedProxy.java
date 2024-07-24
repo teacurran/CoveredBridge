@@ -7,6 +7,8 @@ import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
@@ -17,6 +19,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestResponse;
+
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,27 +42,32 @@ public class GatedProxy {
 
   @GET
   @Path("/{path:.*}")
-  public Uni<Response> proxy(@Context UriInfo uriInfo, @PathParam("path") String path) {
+  public Uni<RestResponse<Buffer>> proxy(@Context UriInfo uriInfo, @PathParam("path") String path) {
     String hostname = uriInfo.getBaseUri().getHost();
 
     LOGGER.info("Proxying request for host:%s path:%s".formatted(hostname, path));
     return Panache.withTransaction(() -> Proxy.findByHostByName(hostname)
       .onItem().transformToUni(proxy -> {
-        if (proxy == null) {
-          return Uni.createFrom().item(Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Host not found: " + hostname).build());
-        }
+//        if (proxy == null) {
+//          return Uni.createFrom().item(RestResponse.status(Response.Status.SERVICE_UNAVAILABLE, "Host not found: " + hostname));
+//        }
         return findMatchingPath(proxy, path)
           .onItem().transformToUni(proxyPath -> {
             if (proxyPath == null) {
-              return Uni.createFrom().item(Response.status(Response.Status.SERVICE_UNAVAILABLE).entity("Path not found: " + path).build());
+              Buffer buffer = Buffer.buffer("Path not found: " + path);
+
+              return Uni.createFrom().item(RestResponse.status(Response.Status.SERVICE_UNAVAILABLE, buffer));
             }
 
-            return fetchContentFromPath(path);
-          })
-          .onItem().transformToUni(content -> Uni.createFrom().item(Response.ok(content).build()));
+            Uni<RestResponse<Buffer>> content = fetchContent(proxyPath.target, path);
+            return content;
+          });
       }).onFailure().invoke(throwable -> LOGGER.error("Error occurred", throwable))
-      .onFailure().recoverWithUni(() -> Uni.createFrom().item(Response.status(Response.Status.NOT_FOUND)
-        .entity("Host not foundX: " + hostname).build()))
+      .onFailure().recoverWithUni(error -> {
+        Buffer buffer = Buffer.buffer("An Error occured: " + path);
+
+        return Uni.createFrom().item(RestResponse.ResponseBuilder.ok(buffer).build());
+      })
     );
   }
 
@@ -108,13 +117,13 @@ public class GatedProxy {
     return modifiedContent;
   }
 
-  private Uni<Response> fetchImageFromPath(String path) {
-    return client.getAbs("https://quarkus.io/" + path)
+  private Uni<RestResponse<Buffer>> fetchContent(String baseUrl, String path) {
+    String url = baseUrl.endsWith("/") ? baseUrl + path : baseUrl + "/" + path;
+    return client.getAbs(url)
       .send()
-      .onItem().transformToUni(res -> {
-        byte[] imageData = res.body().getBytes();
-        String contentType = res.getHeader("Content-Type");
-        return Uni.createFrom().item(Response.ok(imageData).type(contentType).build());
+      .onItem()
+      .transform(res -> {
+        return RestResponse.ok(res.body());
       });
   }
 }
