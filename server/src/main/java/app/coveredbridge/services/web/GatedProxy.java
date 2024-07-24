@@ -13,6 +13,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Context;
@@ -42,15 +43,17 @@ public class GatedProxy {
 
   @GET
   @Path("/{path:.*}")
-  public Uni<RestResponse<Buffer>> proxy(@Context UriInfo uriInfo, @PathParam("path") String path) {
+  public Uni<RestResponse<Buffer>> proxyGet(@Context UriInfo uriInfo, @PathParam("path") String path) {
     String hostname = uriInfo.getBaseUri().getHost();
 
     LOGGER.info("Proxying request for host:%s path:%s".formatted(hostname, path));
     return Panache.withTransaction(() -> Proxy.findByHostByName(hostname)
       .onItem().transformToUni(proxy -> {
-//        if (proxy == null) {
-//          return Uni.createFrom().item(RestResponse.status(Response.Status.SERVICE_UNAVAILABLE, "Host not found: " + hostname));
-//        }
+        if (proxy == null) {
+          Buffer buffer = Buffer.buffer("Host not found: " + hostname);
+
+          return Uni.createFrom().item(RestResponse.status(Response.Status.SERVICE_UNAVAILABLE, buffer));
+        }
         return findMatchingPath(proxy, path)
           .onItem().transformToUni(proxyPath -> {
             if (proxyPath == null) {
@@ -70,6 +73,13 @@ public class GatedProxy {
       })
     );
   }
+
+  @POST
+  @Path("/{path:.*}")
+  public Uni<RestResponse<Buffer>> proxyPost(@Context UriInfo uriInfo, @PathParam("path") String path) {
+    return proxyGet(uriInfo, path);
+  }
+
 
   public Uni<ProxyPath> findMatchingPath(Proxy proxy, String path) {
     return Uni.createFrom().item(proxy.paths.stream()
