@@ -5,10 +5,9 @@ import app.coveredbridge.data.models.ProxyPath;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.core.Vertx;
 import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
@@ -21,7 +20,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
-
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,6 +37,7 @@ public class GatedProxy {
   public void init() {
     WebClientOptions options = new WebClientOptions().setFollowRedirects(true);
     client = WebClient.create(vertx, options);
+
   }
 
   @GET
@@ -132,8 +131,6 @@ public class GatedProxy {
     return client.getAbs(url)
       .send()
       .onItem()
-      .transform(res -> {
-        return RestResponse.ok(res.body());
-      });
+      .transform(res -> VertxReponseTransformer.transformToRestResponse(res));
   }
 }
