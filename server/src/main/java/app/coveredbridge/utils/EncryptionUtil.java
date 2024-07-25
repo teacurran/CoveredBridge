@@ -7,7 +7,9 @@ import java.util.Base64;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
+import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 @ApplicationScoped
 public class EncryptionUtil {
@@ -36,6 +38,17 @@ public class EncryptionUtil {
     gen.init(builder.build());
     byte[] result = new byte[outputLength];
     gen.generateBytes(password.getBytes(StandardCharsets.UTF_8), result, 0, result.length);
+    return result;
+  }
+
+  @WithSpan
+  public byte[] generatePkcs552tHash(String value, byte[] salt) {
+    int hashBytes = 20;
+
+    PKCS5S2ParametersGenerator generator = new PKCS5S2ParametersGenerator();
+    generator.init(value.getBytes(StandardCharsets.UTF_8), salt, 1024);
+
+    byte[] result = ((KeyParameter)generator.generateDerivedParameters(8*hashBytes)).getKey();
     return result;
   }
 

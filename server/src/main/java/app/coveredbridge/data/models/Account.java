@@ -89,7 +89,7 @@ public class Account extends DefaultPanacheEntityWithTimestamps {
         saltBytes = eu.base64Decode(this.passwordSalt);
       }
 
-      this.passwordEncrypted = eu.base64Encode(eu.generateArgon2Sensitive(this.password, saltBytes));
+      this.passwordEncrypted = eu.base64Encode(eu.generatePkcs552tHash(this.password, saltBytes));
       this.password = null;
       this.passwordSalt = eu.base64Encode(saltBytes);
     }
