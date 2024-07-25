@@ -39,13 +39,13 @@ public class Account extends DefaultPanacheEntityWithTimestamps {
   public Organization organization;
 
   @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(name = "account_groups", joinColumns = { @JoinColumn(name = "account_id") },
-    inverseJoinColumns = { @JoinColumn(name = "group_id") })
+  @JoinTable(name = "account_groups", joinColumns = {@JoinColumn(name = "account_id")},
+    inverseJoinColumns = {@JoinColumn(name = "group_id")})
   public Set<Group> groups;
 
   @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(name = "account_permissions", joinColumns = { @JoinColumn(name = "account_id") },
-    inverseJoinColumns = { @JoinColumn(name = "permission_id") })
+  @JoinTable(name = "account_permissions", joinColumns = {@JoinColumn(name = "account_id")},
+    inverseJoinColumns = {@JoinColumn(name = "permission_id")})
   public Set<Permission> permissions;
 
   public enum AccountStatus {
@@ -66,29 +66,32 @@ public class Account extends DefaultPanacheEntityWithTimestamps {
 
   @Override
   public <T extends PanacheEntityBase> Uni<T> persist() {
-    encryptFields();
-    return super.persist();
+    throw new RuntimeException("don't use, use persistAndFlushWithEncryption(EncryptionUtil encryptionUtil) instead");
   }
 
   @Override
   public <T extends PanacheEntityBase> Uni<T> persistAndFlush() {
-    encryptFields();
+    throw new RuntimeException("don't use, use persistAndFlushWithEncryption(EncryptionUtil encryptionUtil) instead");
+  }
+
+  public <T extends PanacheEntityBase> Uni<T> persistAndFlushWithEncryption(EncryptionUtil encryptionUtil) {
+    encryptFields(encryptionUtil);
     return super.persistAndFlush();
   }
 
   @WithSpan
-  public void encryptFields() {
+  public void encryptFields(EncryptionUtil eu) {
     if (this.password != null) {
       byte[] saltBytes = null;
       if (this.passwordSalt == null) {
-        saltBytes = EncryptionUtil.generateSalt16Byte();
+        saltBytes = eu.generateSalt16Byte();
       } else {
-        saltBytes = EncryptionUtil.base64Decode(this.passwordSalt);
+        saltBytes = eu.base64Decode(this.passwordSalt);
       }
 
-      this.passwordEncrypted = EncryptionUtil.base64Encode(EncryptionUtil.generateArgon2Sensitive(this.password, saltBytes));
+      this.passwordEncrypted = eu.base64Encode(eu.generateArgon2Sensitive(this.password, saltBytes));
       this.password = null;
-      this.passwordSalt = EncryptionUtil.base64Encode(saltBytes);
+      this.passwordSalt = eu.base64Encode(saltBytes);
     }
   }
 
@@ -106,7 +109,7 @@ public class Account extends DefaultPanacheEntityWithTimestamps {
         Account newItem = new Account();
         newItem.id = idGenerator.generate(Group.class.getSimpleName());
         newItem.organization = organization;
-        newItem.username  = username;
+        newItem.username = username;
         return newItem.persist();
       });
   }
@@ -114,25 +117,25 @@ public class Account extends DefaultPanacheEntityWithTimestamps {
   public static Uni<Account> createOrUpdateFromJson(Organization organization, AccountType accountJson, SnowflakeIdGenerator idGenerator) {
     return findByOrgAndUsername(organization, accountJson.getUsername())
       .onItem()
-      .call(item -> {
-      if (item == null) {
-        item = new Account();
-        item.id = idGenerator.generate(Account.class.getSimpleName());
-        item.organization = organization;
-        item.username = accountJson.getUsername();
-        if (accountJson.getPassword() != null) {
-          item.password = accountJson.getPassword();
+      .transform(item -> {
+        if (item == null) {
+          item = new Account();
+          item.id = idGenerator.generate(Account.class.getSimpleName());
+          item.organization = organization;
+          item.username = accountJson.getUsername();
+          if (accountJson.getPassword() != null) {
+            item.password = accountJson.getPassword();
+          }
         }
-      }
 
-      item.status = AccountStatus.fromName(accountJson.getStatus());
-      if (item.status == null) {
-        LOGGER.warn("Status '" + accountJson.getStatus() + "' not valid for account:" + item.id + ". setting to disabled");
-        item.status = AccountStatus.DISABLED;
-      }
+        item.status = AccountStatus.fromName(accountJson.getStatus());
+        if (item.status == null) {
+          LOGGER.warn("Status '" + accountJson.getStatus() + "' not valid for account:" + item.id + ". setting to disabled");
+          item.status = AccountStatus.DISABLED;
+        }
 
-      return item.persistAndFlush();
-    });
+        return item;
+      });
   }
 
   public Uni<Account> updateFromJson(AccountType accountFromJson) {

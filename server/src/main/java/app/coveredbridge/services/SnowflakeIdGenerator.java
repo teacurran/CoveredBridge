@@ -2,6 +2,7 @@ package app.coveredbridge.services;
 
 import app.coveredbridge.constants.ApplicationConstants;
 import app.coveredbridge.data.models.Server;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.inject.Inject;
 import org.hibernate.HibernateException;
 
@@ -27,6 +28,7 @@ public class SnowflakeIdGenerator {
    * @return A unique long ID
    * @throws HibernateException if there is an error generating the ID
    */
+  @WithSpan
   public String generate(String idName) throws HibernateException {
     Snowflake snowflake;
     if (snowflakes.containsKey(idName)) {

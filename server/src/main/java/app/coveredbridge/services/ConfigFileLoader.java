@@ -11,6 +11,7 @@ import app.coveredbridge.data.types.HostType;
 import app.coveredbridge.data.types.OrganizationType;
 import app.coveredbridge.data.types.ProxyPathType;
 import app.coveredbridge.data.types.ProxyType;
+import app.coveredbridge.utils.EncryptionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
@@ -50,6 +51,9 @@ public class ConfigFileLoader {
 
   @Inject
   Tracer tracer;
+
+  @Inject
+  EncryptionUtil encryptionUtil;
 
   @WithSpan("ConfigFileLoader.onStart")
   public void onStart(@Observes StartupEvent event, Vertx vertx, Mutiny.SessionFactory factory) {
@@ -127,7 +131,8 @@ public class ConfigFileLoader {
           .setParent(Context.current().with(Span.current()))
           .setSpanKind(SpanKind.INTERNAL)
           .startSpan();
-        Uni<Account> result = Account.createOrUpdateFromJson(org, accountFromJson, snowflakeIdGenerator);
+        Uni<Account> result = Account.createOrUpdateFromJson(org, accountFromJson, snowflakeIdGenerator)
+            .chain(account -> account.persistAndFlushWithEncryption(encryptionUtil));
         span.end();
         return result;
       })

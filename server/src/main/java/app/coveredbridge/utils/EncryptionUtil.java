@@ -4,19 +4,24 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+import io.opentelemetry.instrumentation.annotations.WithSpan;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
 
+@ApplicationScoped
 public class EncryptionUtil {
 
-  public static byte[] generateSalt16Byte() {
+  @WithSpan
+  public byte[] generateSalt16Byte() {
     SecureRandom random = new SecureRandom();
     byte[] salt = new byte[16];
     random.nextBytes(salt);
     return salt;
   }
 
-  public static byte[] generateArgon2Sensitive(String password, byte[] salt) {
+  @WithSpan
+  public byte[] generateArgon2Sensitive(String password, byte[] salt) {
     int opsLimit = 4;
     int memLimit = 1048576;
     int outputLength = 32;
@@ -34,11 +39,13 @@ public class EncryptionUtil {
     return result;
   }
 
-  public static String base64Encode(byte[] input) {
+  @WithSpan
+  public String base64Encode(byte[] input) {
     return Base64.getEncoder().encodeToString(input);
   }
 
-  public static byte[] base64Decode(String input) {
+  @WithSpan
+  public byte[] base64Decode(String input) {
     return Base64.getDecoder().decode(input);
   }
 }
