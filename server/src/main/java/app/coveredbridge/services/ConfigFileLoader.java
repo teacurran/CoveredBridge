@@ -2,9 +2,9 @@ package app.coveredbridge.services;
 
 import app.coveredbridge.data.models.Account;
 import app.coveredbridge.data.models.Group;
-import app.coveredbridge.data.models.ProxyHost;
 import app.coveredbridge.data.models.Organization;
 import app.coveredbridge.data.models.Proxy;
+import app.coveredbridge.data.models.ProxyHost;
 import app.coveredbridge.data.models.ProxyPath;
 import app.coveredbridge.data.types.ConfigType;
 import app.coveredbridge.data.types.HostType;
@@ -12,13 +12,16 @@ import app.coveredbridge.data.types.OrganizationType;
 import app.coveredbridge.data.types.ProxyPathType;
 import app.coveredbridge.data.types.ProxyType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -31,8 +34,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.smallrye.mutiny.helpers.spies.Spy.onItem;
 
 @ApplicationScoped
 public class ConfigFileLoader {
@@ -47,17 +48,21 @@ public class ConfigFileLoader {
   @ConfigProperty(name = "covered-bridge.config.file")
   String configFile;
 
+  @Inject
+  Tracer tracer;
+
   @WithSpan("ConfigFileLoader.onStart")
   public void onStart(@Observes StartupEvent event, Vertx vertx, Mutiny.SessionFactory factory) {
     // Create a new Vertx context for Hibernate Reactive
-    Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
+    io.vertx.core.Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
     // Mark the context as safe
     VertxContextSafetyToggle.setContextSafe(context, true);
     // Run the logic on the created context
     context.runOnContext(v -> handleStart(factory));
   }
 
-  private void handleStart(Mutiny.SessionFactory factory) {
+  @WithSpan
+  public void handleStart(Mutiny.SessionFactory factory) {
     // Start a new transaction
     factory.withTransaction(session -> loadConfig().onItem().transform(config -> {
         LOGGER.info("Config loaded: " + config);
@@ -68,6 +73,7 @@ public class ConfigFileLoader {
       });
   }
 
+  @WithSpan
   public Uni<ConfigType> parseConfigJson(File file) {
     return Uni.createFrom().item(() -> {
       try {
@@ -79,20 +85,20 @@ public class ConfigFileLoader {
     });
   }
 
-  private Uni<Void> loadConfig() {
+  @WithSpan
+  public Uni<Void> loadConfig() {
     return parseConfigJson(new File(configFile))
       .onItem().transformToUni(config -> {
         LOGGER.info("Config loaded: " + config);
 
-        List<Uni<Void>> orgUnis = new ArrayList<>();
-
-        config.getOrganizations().forEach(orgFromJson ->
-          orgUnis.add(
+        return Multi.createFrom().iterable(config.getOrganizations())
+          .onItem().transformToUniAndConcatenate(orgFromJson ->
             Organization.findOrCreateByKey(orgFromJson.getKey(), snowflakeIdGenerator)
-              .onItem()
-              .call(org -> findOrCreateGroups(org, orgFromJson))
-              .call(org -> findOrCreateAccounts(org, orgFromJson))
-              .call(org -> {
+              .invoke(org -> LOGGER.info("Organization created: " + org))
+              .chain(org -> findOrCreateGroups(org, orgFromJson))
+              .invoke(org -> LOGGER.info("Groups created for organization: " + org))
+              .chain(org -> findOrCreateAccounts(org, orgFromJson))
+              .chain(org -> {
                 List<Uni<Proxy>> proxyUniList = new ArrayList<>();
                 for (ProxyType proxyFromJson : orgFromJson.getProxies()) {
                   proxyUniList.add(findOrCreateProxy(org, proxyFromJson));
@@ -100,28 +106,36 @@ public class ConfigFileLoader {
 
                 return Uni.combine().all().unis(proxyUniList).with(ignored -> null);
               }).replaceWith(Uni.createFrom().nullItem())
-          )
-        );
-
-        return Uni.combine().all().unis(orgUnis).discardItems();
+          ).collect().asList().replaceWith(Uni.createFrom().nullItem());
       });
   }
 
-  private Uni<Proxy> findOrCreateProxy(Organization org, ProxyType proxyFromJson) {
+  @WithSpan
+  public Uni<Proxy> findOrCreateProxy(Organization org, ProxyType proxyFromJson) {
     return Proxy.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
       .onItem()
       .call(proxy -> findOrCreateProxyHosts(proxy, proxyFromJson))
       .call(proxy -> findOrCreateProxyPaths(proxy, proxyFromJson).replaceWith(Uni.createFrom().item(proxy)));
   }
 
+  @WithSpan
   public Uni<Organization> findOrCreateAccounts(Organization org, OrganizationType orgFromJson) {
     return Multi.createFrom().iterable(orgFromJson.getAccounts())
       .onItem()
-      .transformToUniAndConcatenate(accountFromJson -> Account.createOrUpdateFromJson(org, accountFromJson, snowflakeIdGenerator))
+      .transformToUniAndConcatenate(accountFromJson -> {
+        Span span = tracer.spanBuilder("findOrCreateAccounts")
+          .setParent(Context.current().with(Span.current()))
+          .setSpanKind(SpanKind.INTERNAL)
+          .startSpan();
+        Uni<Account> result = Account.createOrUpdateFromJson(org, accountFromJson, snowflakeIdGenerator);
+        span.end();
+        return result;
+      })
       .collect().asList().replaceWith(Uni.createFrom().item(org));
   }
 
-  private Uni<Organization> findOrCreateGroups(Organization org, OrganizationType orgFromJson) {
+  @WithSpan
+  public Uni<Organization> findOrCreateGroups(Organization org, OrganizationType orgFromJson) {
     return Multi.createFrom().iterable(orgFromJson.getGroups())
       .onItem()
       .transformToUniAndConcatenate(groupFromJson -> {
@@ -130,7 +144,8 @@ public class ConfigFileLoader {
       .collect().asList().replaceWith(Uni.createFrom().item(org));
   }
 
-  private Uni<Proxy> findOrCreateProxyPaths(Proxy proxy, ProxyType proxyFromJson) {
+  @WithSpan
+  public Uni<Proxy> findOrCreateProxyPaths(Proxy proxy, ProxyType proxyFromJson) {
     List<Uni<ProxyPath>> pathUniList = new ArrayList<>();
     for (ProxyPathType pathFromJson : proxyFromJson.getPaths()) {
       pathUniList.add(
@@ -149,7 +164,8 @@ public class ConfigFileLoader {
       .collect().asList().replaceWith(Uni.createFrom().item(proxy));
   }
 
-  private Uni<Proxy> findOrCreateProxyHosts(Proxy proxy, ProxyType proxyFromJson) {
+  @WithSpan
+  public Uni<Proxy> findOrCreateProxyHosts(Proxy proxy, ProxyType proxyFromJson) {
     List<Uni<ProxyHost>> hostUniList = new ArrayList<>();
     for (HostType hostFromJson : proxyFromJson.getHosts()) {
       hostUniList.add(

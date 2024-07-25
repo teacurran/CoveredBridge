@@ -1,7 +1,6 @@
 package app.coveredbridge.data.models;
 
 import app.coveredbridge.data.types.AccountType;
-import app.coveredbridge.services.ConfigFileLoader;
 import app.coveredbridge.services.SnowflakeIdGenerator;
 import app.coveredbridge.utils.EncryptionUtil;
 import io.opentelemetry.instrumentation.annotations.WithSpan;

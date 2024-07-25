@@ -27,11 +27,11 @@
           "paths": [
             {
               "path": "php",
-              "target": "http://example-php"
+              "target": "http://localhost:8001/"
             },
             {
               "path": "php/secure",
-              "target": "http://example-php/secure",
+              "target": "http://localhost:8001/secure",
               "secure": true
             },
             {
