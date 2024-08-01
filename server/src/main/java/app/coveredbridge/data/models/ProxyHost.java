@@ -16,7 +16,7 @@ import java.util.Map;
 public class ProxyHost extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne
-  public Proxy proxy;
+  public Site site;
 
   public String name;
 
@@ -35,13 +35,13 @@ public class ProxyHost extends DefaultPanacheEntityWithTimestamps {
     return find("name", value).firstResult();
   }
 
-  public static Uni<ProxyHost> findOrCreateByName(Proxy proxy, String name, SnowflakeIdGenerator idGenerator) {
+  public static Uni<ProxyHost> findOrCreateByName(Site site, String name, SnowflakeIdGenerator idGenerator) {
     return findByName(name)
       .onItem().ifNotNull().transform(host -> host)
       .onItem().ifNull().switchTo(() -> {
         ProxyHost newItem = new ProxyHost();
         newItem.id = idGenerator.generate(ProxyHost.class.getSimpleName());
-        newItem.proxy = proxy;
+        newItem.site = site;
         newItem.name = name;
         // Set other default values if necessary
         return newItem.persist();

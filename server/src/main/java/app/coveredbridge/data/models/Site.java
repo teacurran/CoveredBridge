@@ -15,19 +15,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="proxies",
+@Table(name="sites",
   uniqueConstraints = @UniqueConstraint(columnNames = {"organization_id", "key"}))
 @NamedQuery(name = "Proxy.findByHostByName", query = """
   SELECT P
-  FROM Proxy P
-  JOIN P.hosts PH
-  JOIN Fetch P.organization
-  LEFT JOIN Fetch P.paths PP
+  FROM Site P
+    JOIN P.hosts PH
+    JOIN Fetch P.organization
+    LEFT JOIN Fetch P.paths PP
   WHERE PH.name = :host
-  AND PH.isValidated = true
+    AND PH.isValidated = true
   ORDER BY PP.rank DESC
   """)
-public class Proxy extends DefaultPanacheEntityWithTimestamps {
+public class Site extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne
   public Organization organization;
@@ -35,37 +35,37 @@ public class Proxy extends DefaultPanacheEntityWithTimestamps {
   public String key;
 
   @OneToMany(
-    mappedBy = "proxy",
+    mappedBy = "site",
     cascade = CascadeType.ALL,
     orphanRemoval = true
   )
   public List<ProxyHost> hosts = new ArrayList<>();
 
   @OneToMany(
-    mappedBy = "proxy",
+    mappedBy = "site",
     cascade = CascadeType.ALL,
     orphanRemoval = true
   )
   public List<ProxyPath> paths = new ArrayList<>();
 
-  public static Uni<Proxy> findByKey(String key) {
+  public static Uni<Site> findByKey(String key) {
     return find("key", key).firstResult();
   }
 
-  public static Uni<Proxy> findOrCreateByKey(Organization organization, String key, SnowflakeIdGenerator idGenerator) {
+  public static Uni<Site> findOrCreateByKey(Organization organization, String key, SnowflakeIdGenerator idGenerator) {
     return findByKey(key)
       .onItem().ifNotNull().transform(org -> org)
       .onItem().ifNull().switchTo(() -> {
-        Proxy newProxy = new Proxy();
-        newProxy.id = idGenerator.generate(Proxy.class.getSimpleName());
-        newProxy.organization = organization;
-        newProxy.key = key;
+        Site newSite = new Site();
+        newSite.id = idGenerator.generate(Site.class.getSimpleName());
+        newSite.organization = organization;
+        newSite.key = key;
         // Set other default values if necessary
-        return newProxy.persist();
+        return newSite.persist();
       });
   }
 
-  public static Uni<Proxy> findByHostByName(String host) {
+  public static Uni<Site> findByHostByName(String host) {
     return find("#Proxy.findByHostByName",
       Parameters.with("host", host).map()
     ).firstResult();

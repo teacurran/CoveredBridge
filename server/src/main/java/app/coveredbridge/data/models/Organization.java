@@ -20,7 +20,7 @@ public class Organization extends DefaultPanacheEntityWithTimestamps {
   public String name;
 
   @OneToMany(mappedBy = "organization")
-  public List<Proxy> proxies = new ArrayList<>();
+  public List<Site> proxies = new ArrayList<>();
 
   public static Uni<Organization> findByKey(String key) {
     return find("key", key).firstResult();

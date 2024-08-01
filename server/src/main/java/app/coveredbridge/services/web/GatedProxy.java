@@ -1,6 +1,6 @@
 package app.coveredbridge.services.web;
 
-import app.coveredbridge.data.models.Proxy;
+import app.coveredbridge.data.models.Site;
 import app.coveredbridge.data.models.ProxyPath;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.hibernate.reactive.panache.Panache;
@@ -46,7 +46,7 @@ public class GatedProxy {
     String hostname = uriInfo.getBaseUri().getHost();
 
     LOGGER.info("Proxying request for host:%s path:%s".formatted(hostname, path));
-    return Panache.withTransaction(() -> Proxy.findByHostByName(hostname)
+    return Panache.withTransaction(() -> Site.findByHostByName(hostname)
       .onItem().transformToUni(proxy -> {
         if (proxy == null) {
           Buffer buffer = Buffer.buffer("Host not found: " + hostname);
@@ -80,8 +80,8 @@ public class GatedProxy {
   }
 
 
-  public Uni<ProxyPath> findMatchingPath(Proxy proxy, String path) {
-    return Uni.createFrom().item(proxy.paths.stream()
+  public Uni<ProxyPath> findMatchingPath(Site site, String path) {
+    return Uni.createFrom().item(site.paths.stream()
       .filter(p -> {
         return path.startsWith(p.path);
       })

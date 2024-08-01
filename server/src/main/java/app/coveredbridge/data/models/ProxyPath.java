@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne(fetch = FetchType.LAZY)
-  public Proxy proxy;
+  public Site site;
 
   public String path;
 
@@ -28,12 +28,12 @@ public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
 
   public String target;
 
-  public static Uni<ProxyPath> findByProxyAndPath(Proxy proxy, String path) {
-    return find("proxy = ?1 AND path = ?2", proxy, path).firstResult();
+  public static Uni<ProxyPath> findByProxyAndPath(Site site, String path) {
+    return find("proxy = ?1 AND path = ?2", site, path).firstResult();
   }
 
-  public static Uni<ProxyPath> findOrCreateByProxyAndPath(Proxy proxy, String path, SnowflakeIdGenerator idGenerator) {
-    return findByProxyAndPath(proxy, path)
+  public static Uni<ProxyPath> findOrCreateByProxyAndPath(Site site, String path, SnowflakeIdGenerator idGenerator) {
+    return findByProxyAndPath(site, path)
       .onItem().transformToUni(proxyPath -> {
         if (proxyPath != null) {
           return Uni.createFrom().item(proxyPath);
@@ -41,7 +41,7 @@ public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
         ProxyPath newPath = new ProxyPath();
         newPath.id = idGenerator.generate(ProxyPath.class.getSimpleName());
         newPath.rank = new BigDecimal(0);
-        newPath.proxy = proxy;
+        newPath.site = site;
         newPath.path = path;
         return newPath.persist();
       });

@@ -11,7 +11,7 @@
           "name": "Customer Support"
         }
       ],
-      "proxies": [
+      "sites": [
         {
           "key": "proxy1",
           "hosts": [
@@ -24,29 +24,39 @@
               "isValidated": true
             }
           ],
+          "targets": [
+            {
+              "name": "php",
+              "url": "http://localhost:8001"
+            },
+            {
+              "name": "api",
+              "url": "http://localhost:3000"
+            }
+          ],
           "paths": [
             {
               "path": "php",
-              "target": "http://localhost:8001/"
+              "target": "php"
             },
             {
               "path": "php/secure",
-              "target": "http://localhost:8001/secure",
+              "target": "php",
               "secure": true
             },
             {
               "path": "php/admin",
-              "target": "http://example-php/admin",
+              "target": "php",
               "secure": true,
-              "groups": ["admin"]
+              "groups": ["Admin"]
             },
             {
               "path": "api",
-              "target": "http://localhost:3000"
+              "target": "api"
             },
             {
               "path": "/*",
-              "target": "http://localhost:3000"
+              "target": "php"
             }
           ]
         }
@@ -66,19 +76,19 @@
               "isValidated": false
             }
           ],
-          "status": "ACTIVE"
+          "status": "ACTIVE",
         },
         {
           "username": "user2",
           "password": "password",
-          "groups": ["Customer Support"],
           "phone_numbers": [
             {
-              "phone_number": "+1 617-605-9476",
+              "number": "+1 617-605-9476",
               "isValidated": true
             }
           ],
-          "status": "DISABLED"
+          "status": "DISABLED",
+          "groups": ["Customer Support"],
         }
       ]
     }
