@@ -76,7 +76,7 @@
               "isValidated": false
             }
           ],
-          "status": "ACTIVE",
+          "status": "ACTIVE"
         },
         {
           "username": "user2",
@@ -88,7 +88,7 @@
             }
           ],
           "status": "DISABLED",
-          "groups": ["Customer Support"],
+          "groups": ["Customer Support"]
         }
       ]
     }

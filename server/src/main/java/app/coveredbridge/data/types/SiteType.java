@@ -6,16 +6,18 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.util.List;
 
 @RegisterForReflection
-@JsonRootName("proxy")
-public class ProxyType {
+@JsonRootName("site")
+public class SiteType {
 
   private String key;
 
   private List<HostType> hosts;
 
-  private List<ProxyPathType> paths;
+  private List<SiteTargetType> targets;
 
-  public ProxyType() {
+  private List<SitePathType> paths;
+
+  public SiteType() {
     // default no-arg constructor
   }
 
@@ -35,11 +37,19 @@ public class ProxyType {
     this.hosts = hosts;
   }
 
-  public List<ProxyPathType> getPaths() {
+  public List<SitePathType> getPaths() {
     return paths;
   }
 
-  public void setPaths(List<ProxyPathType> paths) {
+  public void setPaths(List<SitePathType> paths) {
     this.paths = paths;
+  }
+
+  public List<SiteTargetType> getTargets() {
+    return targets;
+  }
+
+  public void setTargets(List<SiteTargetType> targets) {
+    this.targets = targets;
   }
 }

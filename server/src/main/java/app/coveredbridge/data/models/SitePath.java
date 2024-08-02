@@ -1,6 +1,6 @@
 package app.coveredbridge.data.models;
 
-import app.coveredbridge.data.types.ProxyPathType;
+import app.coveredbridge.data.types.SitePathType;
 import app.coveredbridge.services.SnowflakeIdGenerator;
 import io.smallrye.mutiny.Uni;
 import jakarta.persistence.Column;
@@ -13,10 +13,10 @@ import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "proxy_paths",
-  uniqueConstraints = @UniqueConstraint(columnNames = {"proxy_id", "path"})
+@Table(name = "site_paths",
+  uniqueConstraints = @UniqueConstraint(columnNames = {"site_id", "path"})
 )
-public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
+public class SitePath extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne(fetch = FetchType.LAZY)
   public Site site;
@@ -28,18 +28,18 @@ public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
 
   public String target;
 
-  public static Uni<ProxyPath> findByProxyAndPath(Site site, String path) {
-    return find("proxy = ?1 AND path = ?2", site, path).firstResult();
+  public static Uni<SitePath> findBySiteAndPath(Site site, String path) {
+    return find("site = ?1 AND path = ?2", site, path).firstResult();
   }
 
-  public static Uni<ProxyPath> findOrCreateByProxyAndPath(Site site, String path, SnowflakeIdGenerator idGenerator) {
-    return findByProxyAndPath(site, path)
+  public static Uni<SitePath> findOrCreateBySiteAndPath(Site site, String path, SnowflakeIdGenerator idGenerator) {
+    return findBySiteAndPath(site, path)
       .onItem().transformToUni(proxyPath -> {
         if (proxyPath != null) {
           return Uni.createFrom().item(proxyPath);
         }
-        ProxyPath newPath = new ProxyPath();
-        newPath.id = idGenerator.generate(ProxyPath.class.getSimpleName());
+        SitePath newPath = new SitePath();
+        newPath.id = idGenerator.generate(SitePath.class.getSimpleName());
         newPath.rank = new BigDecimal(0);
         newPath.site = site;
         newPath.path = path;
@@ -47,7 +47,7 @@ public class ProxyPath extends DefaultPanacheEntityWithTimestamps {
       });
   }
 
-  public Uni<ProxyPath> updateFromJson(ProxyPathType json) {
+  public Uni<SitePath> updateFromJson(SitePathType json) {
     this.path = json.getPath();
     this.target = json.getTarget();
     return this.persistAndFlush();

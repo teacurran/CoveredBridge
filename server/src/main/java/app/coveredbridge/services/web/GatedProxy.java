@@ -1,7 +1,7 @@
 package app.coveredbridge.services.web;
 
 import app.coveredbridge.data.models.Site;
-import app.coveredbridge.data.models.ProxyPath;
+import app.coveredbridge.data.models.SitePath;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
@@ -80,7 +80,7 @@ public class GatedProxy {
   }
 
 
-  public Uni<ProxyPath> findMatchingPath(Site site, String path) {
+  public Uni<SitePath> findMatchingPath(Site site, String path) {
     return Uni.createFrom().item(site.paths.stream()
       .filter(p -> {
         return path.startsWith(p.path);

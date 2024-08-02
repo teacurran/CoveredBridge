@@ -4,10 +4,11 @@ import com.fasterxml.jackson.annotation.JsonRootName;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
-@JsonRootName("path")
-public class ProxyPathType {
+@JsonRootName("site_path")
+public class SitePathType {
   private String path;
   private String target;
+  private boolean secure;
 
   public String getPath() {
     return path;
@@ -23,5 +24,13 @@ public class ProxyPathType {
 
   public void setTarget(String target) {
     this.target = target;
+  }
+
+  public boolean isSecure() {
+    return secure;
+  }
+
+  public void setSecure(boolean secure) {
+    this.secure = secure;
   }
 }

@@ -4,13 +4,13 @@ import app.coveredbridge.data.models.Account;
 import app.coveredbridge.data.models.Group;
 import app.coveredbridge.data.models.Organization;
 import app.coveredbridge.data.models.Site;
-import app.coveredbridge.data.models.ProxyHost;
-import app.coveredbridge.data.models.ProxyPath;
+import app.coveredbridge.data.models.SiteHost;
+import app.coveredbridge.data.models.SitePath;
 import app.coveredbridge.data.types.ConfigType;
 import app.coveredbridge.data.types.HostType;
 import app.coveredbridge.data.types.OrganizationType;
-import app.coveredbridge.data.types.ProxyPathType;
-import app.coveredbridge.data.types.ProxyType;
+import app.coveredbridge.data.types.SitePathType;
+import app.coveredbridge.data.types.SiteType;
 import app.coveredbridge.utils.EncryptionUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.opentelemetry.api.trace.Span;
@@ -104,7 +104,7 @@ public class ConfigFileLoader {
               .chain(org -> findOrCreateAccounts(org, orgFromJson))
               .chain(org -> {
                 List<Uni<Site>> proxyUniList = new ArrayList<>();
-                for (ProxyType proxyFromJson : orgFromJson.getProxies()) {
+                for (SiteType proxyFromJson : orgFromJson.getSites()) {
                   proxyUniList.add(findOrCreateProxy(org, proxyFromJson));
                 }
 
@@ -115,7 +115,7 @@ public class ConfigFileLoader {
   }
 
   @WithSpan
-  public Uni<Site> findOrCreateProxy(Organization org, ProxyType proxyFromJson) {
+  public Uni<Site> findOrCreateProxy(Organization org, SiteType proxyFromJson) {
     return Site.findOrCreateByKey(org, proxyFromJson.getKey(), snowflakeIdGenerator)
       .onItem()
       .call(proxy -> findOrCreateProxyHosts(proxy, proxyFromJson))
@@ -150,11 +150,11 @@ public class ConfigFileLoader {
   }
 
   @WithSpan
-  public Uni<Site> findOrCreateProxyPaths(Site site, ProxyType proxyFromJson) {
-    List<Uni<ProxyPath>> pathUniList = new ArrayList<>();
-    for (ProxyPathType pathFromJson : proxyFromJson.getPaths()) {
+  public Uni<Site> findOrCreateProxyPaths(Site site, SiteType proxyFromJson) {
+    List<Uni<SitePath>> pathUniList = new ArrayList<>();
+    for (SitePathType pathFromJson : proxyFromJson.getPaths()) {
       pathUniList.add(
-        ProxyPath.findOrCreateByProxyAndPath(site, pathFromJson.getPath(), snowflakeIdGenerator)
+        SitePath.findOrCreateBySiteAndPath(site, pathFromJson.getPath(), snowflakeIdGenerator)
           .onItem().transformToUni(path -> path.updateFromJson(pathFromJson))
           .onFailure().recoverWithUni(throwable -> {
             LOGGER.error("Failed to create path: " + pathFromJson.getPath(), throwable);
@@ -170,11 +170,11 @@ public class ConfigFileLoader {
   }
 
   @WithSpan
-  public Uni<Site> findOrCreateProxyHosts(Site site, ProxyType proxyFromJson) {
-    List<Uni<ProxyHost>> hostUniList = new ArrayList<>();
+  public Uni<Site> findOrCreateProxyHosts(Site site, SiteType proxyFromJson) {
+    List<Uni<SiteHost>> hostUniList = new ArrayList<>();
     for (HostType hostFromJson : proxyFromJson.getHosts()) {
       hostUniList.add(
-        ProxyHost.findOrCreateByName(site, hostFromJson.getName(), snowflakeIdGenerator)
+        SiteHost.findOrCreateByName(site, hostFromJson.getName(), snowflakeIdGenerator)
           .onItem().transformToUni(host -> host.updateFromJson(hostFromJson))
           .onFailure().recoverWithUni(throwable -> {
             LOGGER.error("Failed to create host: " + hostFromJson.getName(), throwable);

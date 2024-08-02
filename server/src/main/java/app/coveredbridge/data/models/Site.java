@@ -39,14 +39,21 @@ public class Site extends DefaultPanacheEntityWithTimestamps {
     cascade = CascadeType.ALL,
     orphanRemoval = true
   )
-  public List<ProxyHost> hosts = new ArrayList<>();
+  public List<SiteHost> hosts = new ArrayList<>();
 
   @OneToMany(
     mappedBy = "site",
     cascade = CascadeType.ALL,
     orphanRemoval = true
   )
-  public List<ProxyPath> paths = new ArrayList<>();
+  public List<SiteTarget> targets = new ArrayList<>();
+
+  @OneToMany(
+    mappedBy = "site",
+    cascade = CascadeType.ALL,
+    orphanRemoval = true
+  )
+  public List<SitePath> paths = new ArrayList<>();
 
   public static Uni<Site> findByKey(String key) {
     return find("key", key).firstResult();

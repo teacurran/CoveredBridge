@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Entity
-@Table(name = "proxy_hosts")
-public class ProxyHost extends DefaultPanacheEntityWithTimestamps {
+@Table(name = "site_hosts")
+public class SiteHost extends DefaultPanacheEntityWithTimestamps {
 
   @ManyToOne
   public Site site;
@@ -24,23 +24,23 @@ public class ProxyHost extends DefaultPanacheEntityWithTimestamps {
     nullable = false, columnDefinition="BOOLEAN DEFAULT false")
   public boolean isValidated;
 
-  public static Uni<ProxyHost> findByValidatedName(String value) {
+  public static Uni<SiteHost> findByValidatedName(String value) {
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("name", value);
     parameters.put("validated", true);
     return find("name=:name AND isValidated=:validated", parameters).firstResult();
   }
 
-  public static Uni<ProxyHost> findByName(String value) {
+  public static Uni<SiteHost> findByName(String value) {
     return find("name", value).firstResult();
   }
 
-  public static Uni<ProxyHost> findOrCreateByName(Site site, String name, SnowflakeIdGenerator idGenerator) {
+  public static Uni<SiteHost> findOrCreateByName(Site site, String name, SnowflakeIdGenerator idGenerator) {
     return findByName(name)
       .onItem().ifNotNull().transform(host -> host)
       .onItem().ifNull().switchTo(() -> {
-        ProxyHost newItem = new ProxyHost();
-        newItem.id = idGenerator.generate(ProxyHost.class.getSimpleName());
+        SiteHost newItem = new SiteHost();
+        newItem.id = idGenerator.generate(SiteHost.class.getSimpleName());
         newItem.site = site;
         newItem.name = name;
         // Set other default values if necessary
@@ -48,7 +48,7 @@ public class ProxyHost extends DefaultPanacheEntityWithTimestamps {
       });
   }
 
-  public Uni<ProxyHost> updateFromJson(HostType hostFromJson) {
+  public Uni<SiteHost> updateFromJson(HostType hostFromJson) {
     this.name = hostFromJson.getName();
     this.isValidated = hostFromJson.getIsValidated();
     return this.persistAndFlush();

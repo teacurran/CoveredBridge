@@ -10,7 +10,7 @@ import java.util.List;
 public class OrganizationType {
 
   String key;
-  List<ProxyType> proxies;
+  List<SiteType> sites;
   List<GroupType> groups;
   List<AccountType> accounts;
 
@@ -26,12 +26,12 @@ public class OrganizationType {
     this.key = key;
   }
 
-  public List<ProxyType> getProxies() {
-    return proxies;
+  public List<SiteType> getSites() {
+    return sites;
   }
 
-  public void setProxies(List<ProxyType> proxies) {
-    this.proxies = proxies;
+  public void setSites(List<SiteType> sites) {
+    this.sites = sites;
   }
 
   public List<GroupType> getGroups() {
