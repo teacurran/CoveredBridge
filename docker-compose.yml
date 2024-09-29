@@ -55,6 +55,8 @@ services:
       - "8001:80"
     depends_on:
       - covered-bridge
+    volumes:
+      - ./examples/php/:/var/www/html/
 
 volumes:
   db_data:
